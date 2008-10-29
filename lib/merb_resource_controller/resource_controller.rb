@@ -40,10 +40,6 @@ module Merb
         protected
     
         def resource_proxy
-          puts "XXXXXXXXXXX"
-          puts "XXXXXXXXXXX"
-          puts "XXXXXXXXXXX"
-          puts "XXXXXXXXXXX"
           self.class.resource_proxy
         end
         
