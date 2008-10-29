@@ -1,0 +1,86 @@
+h2. merb_resource_controller
+
+A Merb plugin that provides the default restful actions for controllers.
+
+h2. Usage Examples
+
+<pre>
+<code>
+class Application < Merb::Controller
+
+  # This will give you the 'controlling' class method
+  extend Merb::ResourceController::Mixin::ClassMethods
+
+end
+
+class Articles < Application
+  
+  # This will include all the actions listed below.
+  
+  controlling :articles
+  
+  # All the methods that are called inside
+  # these generated actions, are obviously available
+  # as instance methods within this controller.
+  # Feel free to override them, to customize how
+  # this controller behaves.
+  
+  # def index
+  #   collection = load_collection
+  #   display collection
+  # end
+  # 
+  # def show
+  #   member = load_member(params[:id])
+  #   raise Merb::ControllerExceptions::NotFound unless member
+  #   display member
+  # end
+  # 
+  # def new
+  #   member = new_member
+  #   display member
+  # end
+  # 
+  # def edit
+  #   member = load_member(params[:id])
+  #   raise Merb::ControllerExceptions::NotFound unless member
+  #   display member
+  # end
+  # 
+  # def create
+  #   member = new_member(params[member_name])
+  #   if member.save
+  #     options = flash_supported? ? { :message => successful_create_messages } : {}
+  #     redirect resource(member), options
+  #   else
+  #     message.merge!(failed_create_messages) if flash_supported?
+  #     render :new
+  #   end
+  # end
+  # 
+  # def update
+  #   member = load_member(params[:id])
+  #   raise Merb::ControllerExceptions::NotFound unless member
+  #   if member.update_attributes(params[member_name])
+  #     options = flash_supported? ? { :message => successful_update_messages } : {}
+  #     redirect resource(member), options
+  #   else
+  #     message.merge!(failed_update_messages) if flash_supported?
+  #     display member, :edit
+  #   end
+  # end
+  # 
+  # def destroy
+  #   member = load_member(params[:id])
+  #   raise Merb::ControllerExceptions::NotFound unless member
+  #   if member.destroy
+  #     options = flash_supported? ? { :message => successful_destroy_messages } : {}
+  #     redirect resource(collection_name), options
+  #   else
+  #     raise Merb::ControllerExceptions::InternalServerError
+  #   end
+  # end
+  
+end
+</code>
+</pre>

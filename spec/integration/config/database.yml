@@ -1,0 +1,3 @@
+test:
+  adapter:  sqlite3
+  database: spec/merb_resource_controller_test.db
