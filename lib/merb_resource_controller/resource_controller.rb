@@ -44,8 +44,8 @@ module Merb
         end
         
         
-        def load_collection
-          resource_proxy.all
+        def load_collection(conditions = {})
+          resource_proxy.all(conditions)
         end
         
         def load_member(id)
