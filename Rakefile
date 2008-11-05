@@ -6,7 +6,7 @@ require 'merb-core/tasks/merb'
 require "spec/rake/spectask"
 
 GEM_NAME = "merb_resource_controller"
-GEM_VERSION = "0.0.1"
+GEM_VERSION = "0.1.0"
 AUTHOR = "Martin Gamsjaeger"
 EMAIL = "gamsnjaga@gmail.com"
 HOMEPAGE = "http://merbivore.com/"
@@ -24,7 +24,7 @@ spec = Gem::Specification.new do |s|
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  s.add_dependency('merb', '>= 0.9.10')
+  s.add_dependency('merb', '>= 0.9.13')
   s.require_path = 'lib'
   s.files = %w(LICENSE README.textile Rakefile TODO) + Dir.glob("{lib,spec}/**/*")
 end
