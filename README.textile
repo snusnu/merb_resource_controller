@@ -1,86 +1,131 @@
 h2. merb_resource_controller
 
-A Merb plugin that provides the default restful actions for controllers.
+A Merb plugin that provides the default restful actions for controllers and allows for easy customization.
+
+Currently @merb_resource_controller@ supports _toplevel resources_ and _resources with not more than one parent_.
+@merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
+will "adjust" its actions accordingly. Have a look at @Merb::ResourceController::Mixin::InstanceMethods@ and 
+@Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/resource_controller.rb@ 
+to see what methods will be available inside your controllers, in addition to the generated standard @CRUD@ actions. 
+Alternatively you can continue reading this README and glance through the code listed under _Defined Actions_ 
+and _Additional Helper Methods_. Almost all of the available methods are used from inside the standard actions 
+that get included into your controller. 
+
 
 h2. Usage Examples
 
 <pre>
 <code>
 class Application < Merb::Controller
-
   # This will give you the 'controlling' class method
   extend Merb::ResourceController::Mixin::ClassMethods
-
 end
 
 class Articles < Application
-  
-  # This will include all the actions listed below.
-  
   controlling :articles
-  
-  # All the methods that are called inside
-  # these generated actions, are obviously available
-  # as instance methods within this controller.
-  # Feel free to override them, to customize how
-  # this controller behaves.
-  
-  # def index
-  #   collection = load_collection
-  #   display collection
-  # end
-  # 
-  # def show
-  #   member = load_member(params[:id])
-  #   raise Merb::ControllerExceptions::NotFound unless member
-  #   display member
-  # end
-  # 
-  # def new
-  #   member = new_member
-  #   display member
-  # end
-  # 
-  # def edit
-  #   member = load_member(params[:id])
-  #   raise Merb::ControllerExceptions::NotFound unless member
-  #   display member
-  # end
-  # 
-  # def create
-  #   member = new_member(params[member_name])
-  #   if member.save
-  #     options = flash_supported? ? { :message => successful_create_messages } : {}
-  #     redirect resource(member), options
-  #   else
-  #     message.merge!(failed_create_messages) if flash_supported?
-  #     render :new
-  #   end
-  # end
-  # 
-  # def update
-  #   member = load_member(params[:id])
-  #   raise Merb::ControllerExceptions::NotFound unless member
-  #   if member.update_attributes(params[member_name])
-  #     options = flash_supported? ? { :message => successful_update_messages } : {}
-  #     redirect resource(member), options
-  #   else
-  #     message.merge!(failed_update_messages) if flash_supported?
-  #     display member, :edit
-  #   end
-  # end
-  # 
-  # def destroy
-  #   member = load_member(params[:id])
-  #   raise Merb::ControllerExceptions::NotFound unless member
-  #   if member.destroy
-  #     options = flash_supported? ? { :message => successful_destroy_messages } : {}
-  #     redirect resource(collection_name), options
-  #   else
-  #     raise Merb::ControllerExceptions::InternalServerError
-  #   end
-  # end
-  
+end
+
+class Comments < Application
+  controlling :comments do |c|
+    c.belongs_to :article # , :key => :article_id
+  end
 end
 </code>
 </pre>
+
+h2. Defined Actions
+
+<pre>
+<code>
+# The above controllers will all have the following
+# actions defined. Feel free to override them, to
+# customize how the controllers behave. Of course
+# you are also free to override all the methods used
+# by these defined actions
+  
+def index
+  set_collection(load_collection)
+  display collection
+end
+
+def show
+  set_member(load_member(params[:id]))
+  raise Merb::ControllerExceptions::NotFound unless member
+  display member
+end
+
+def new
+  set_member(new_member)
+  display member
+end
+
+def edit
+  set_member(load_member(params[:id]))
+  raise Merb::ControllerExceptions::NotFound unless member
+  display member
+end
+
+def create
+  set_member(new_member(params[member_name]))
+  if member.save
+    options = flash_supported? ? { :message => successful_create_messages } : {}
+    redirect redirect_on_successful_create, options
+  else
+    message.merge!(failed_create_messages) if flash_supported?
+    render :new
+  end
+end
+
+def update
+  set_member(load_member(params[:id]))
+  raise Merb::ControllerExceptions::NotFound unless member
+  if member.update_attributes(params[member_name])
+    options = flash_supported? ? { :message => successful_update_messages } : {}
+    redirect redirect_on_successful_update, options
+  else
+    message.merge!(failed_update_messages) if flash_supported?
+    display member, :edit
+  end
+end
+
+def destroy
+  set_member(load_member(params[:id]))
+  raise Merb::ControllerExceptions::NotFound unless member
+  if member.destroy
+    options = flash_supported? ? { :message => successful_destroy_messages } : {}
+    redirect redirect_on_successful_destroy, options
+  else
+    raise Merb::ControllerExceptions::InternalServerError
+  end
+end
+</code>
+</pre>
+
+h2. Additional Helper Methods
+
+<pre>
+<code>
+# In addition to the actions and the methods they are using,
+# you will probably want to override the redirection targets
+# These are the methods you can override to this effect
+
+def redirect_on_successful_create
+  resource(*(has_parent? ? [ parent, member ] : [ member ]))
+end
+
+def redirect_on_successful_update
+  resource(*(has_parent? ? [ parent, member ] : [ member ]))
+end
+
+def redirect_on_successful_destroy
+  resource(*(has_parent? ? [ parent, collection_name ] : [ collection_name ]))
+end
+</code>
+</pre>
+
+h2. TODO
+
+# Support @provides@ and @only_provides@
+# Support user stamps (aka created_by and updated_by)
+# Support arbitrarily nested resources
+# Support pagination once an _official_ merb pagination solution exists

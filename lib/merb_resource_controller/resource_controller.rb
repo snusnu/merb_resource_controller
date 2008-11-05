@@ -21,7 +21,7 @@ module Merb
         #   p.action :destroy
         # end
         def controlling(name, options = {})
-          options = { :defaults => true, :flash => true }.merge!(options)
+          options = { :defaults => true, :flash => true, :use => :all }.merge!(options)
           @resource_proxy = Merb::ResourceController::ResourceProxy.new(name, options)
           yield @resource_proxy if block_given?
           class_inheritable_reader :resource_proxy
@@ -44,16 +44,70 @@ module Merb
         end
         
         
+        def irrelevant_params
+          @irrelevant_params ||= %w(format action controller)
+        end
+        
+        def relevant_params
+          @relevant_params ||= params.reject { |k,v| irrelevant_params.include?(k) }
+        end
+        
+        
+        def has_parents?
+          resource_proxy.has_parents? && has_parent_param?
+        end
+        
+        alias :has_parent? :has_parents?
+        
+        
+        def parent_resources
+          resource_proxy.parent_resources
+        end
+        
+        def parent_resource
+          resource_proxy.parent_resource
+        end
+        
+        
+        def parents
+          resource_proxy.parents.each do |parent|
+            parent[:class].get(params[parent[:key]])
+          end
+        end
+        
+        def parent
+          parent_resource.get(parent_param)
+        end
+        
+        
+        def has_parent_param?
+          !!parent_param
+        end
+        
+        alias :has_parent_params? :has_parent_param?
+        
+        
+        def parent_params
+          resource_proxy.parent_keys.inject([]) do |parents, key|
+            parents << params[key]
+          end
+        end
+                
+        def parent_param
+          params[resource_proxy.parent_key]
+        end
+        
+        
         def load_collection(conditions = {})
-          resource_proxy.all(conditions)
+          resource_proxy.all(query_conditions(conditions))
         end
         
-        def load_member(id)
-          resource_proxy.get(id)
+        def load_member(id, conditions = {})
+          resource_proxy.get(id, query_conditions(conditions))
         end
         
         
-        def collection=(obj)
+        def set_collection(obj)
           instance_variable_set("@#{collection_name}", obj)
         end
         
@@ -66,7 +120,7 @@ module Merb
           resource_proxy.new(attributes)
         end
         
-        def member=(obj)
+        def set_member(obj)
           instance_variable_set("@#{member_name}", obj)
         end
         
@@ -86,6 +140,18 @@ module Merb
         
         def flash_supported?
           self.kind_of?(FlashSupport)
+        end
+        
+        # TODO: try to get dm bug shown in http://gist.github.com/22146 fixed
+        # once it is fixed, we can only return the real conditions, and not the
+        # whole hash including the :conditions key, which will simplify logic
+        # inside this method.
+        def query_conditions(conditions = {})
+          if conditions.empty?
+            relevant_params.empty? ? {} : { :conditions => relevant_params }
+          else
+            conditions
+          end
         end
     
       end

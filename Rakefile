@@ -64,6 +64,7 @@ Spec::Rake::SpecTask.new(:spec) do |t|
   rescue Exception
     # rcov not installed
   end
+  
 end
 
 desc 'Default: run spec examples'

@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
-given "an article exists" do
+given "an Article exists" do
   Article.all.destroy!
   request(
     resource(:articles), 
@@ -17,21 +17,8 @@ describe "resource(:articles)" do
       @response = request(resource(:articles))
     end
     
-    it "responds successfully" do
+    it "should respond successfully" do
       @response.should be_successful
-    end
-    
-  end
-  
-  describe "GET", :given => "an article exists" do
-    
-    before(:each) do
-      @response = request(resource(:articles))
-    end
-    
-    it "has a list of articles" do
-      pending
-      @response.should have_xpath("//ul/li")
     end
     
   end
@@ -46,8 +33,7 @@ describe "resource(:articles)" do
         )
     end
     
-    it "redirects to resource(:articles)" do
-      Article.first.should_not be_nil
+    it "should redirect to resource(@article)" do
       @response.should redirect_to(resource(Article.first), :message => {:notice => "Article was successfully created"})
     end
     
@@ -57,14 +43,13 @@ end
 
 describe "resource(@article)" do 
   
-  describe "a successful DELETE", :given => "an article exists" do
+  describe "a successful DELETE", :given => "an Article exists" do
     
      before(:each) do
-       Merb.logger.info "ARTICLE: #{Article.first.inspect}"
        @response = request(resource(Article.first), :method => "DELETE")
      end
 
-     it "should redirect to the index action" do
+     it "should redirect to resource(:articles)" do
        @response.should redirect_to(resource(:articles))
      end
 
@@ -74,29 +59,37 @@ end
 
 describe "resource(:articles, :new)" do
   
-  before(:each) do
-    @response = request(resource(:articles, :new))
-  end
+  describe "GET" do
   
-  it "responds successfully" do
-    @response.should be_successful
-  end
+    before(:each) do
+      @response = request(resource(:articles, :new))
+    end
   
-end
-
-describe "resource(@article, :edit)", :given => "an article exists" do
+    it "should respond successfully" do
+      @response.should be_successful
+    end
   
-  before(:each) do
-    @response = request(resource(Article.first, :edit))
-  end
-  
-  it "responds successfully" do
-    @response.should be_successful
   end
   
 end
 
-describe "resource(@article)", :given => "an article exists" do
+describe "resource(@article, :edit)", :given => "an Article exists" do
+  
+  describe "PUT" do
+  
+    before(:each) do
+      @response = request(resource(Article.first, :edit))
+    end
+  
+    it "should respond successfully" do
+      @response.should be_successful
+    end
+  
+  end
+  
+end
+
+describe "resource(@article)", :given => "an Article exists" do
   
   describe "GET" do
     
@@ -104,7 +97,7 @@ describe "resource(@article)", :given => "an article exists" do
       @response = request(resource(Article.first))
     end
   
-    it "responds successfully" do
+    it "should respond successfully" do
       @response.should be_successful
     end
     
@@ -118,7 +111,7 @@ describe "resource(@article)", :given => "an article exists" do
         :params => { :article => {:id => @article.id} })
     end
   
-    it "redirect to the article show action" do
+    it "should redirect to resource(@article)" do
       @response.should redirect_to(resource(@article))
     end
     
