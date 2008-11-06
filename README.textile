@@ -20,26 +20,40 @@ h2. Usage Examples
 <code>
 class Application < Merb::Controller
   
-  # This will give you the 'controlling' class method
-  extend Merb::ResourceController::Mixin::ClassMethods
-  
-  # This will give you the 'enable_identity_map' class method
-  extend Merb::ResourceController::DM::IdentityMapSupport
-  
   # This will wrap all actions inside a dm repository block
-  # For more information on dm identity maps have a look at
+  # in order to be able to use DM's identitiy map feature.
+  # For more information on DM identity maps have a look at
   # http://datamapper.org/doku.php?id=docs:identity_map
   #
+  # Feel free to include this module into single controllers 
+  # instead of including it into Application controller, which
+  # enables identity maps for every controller action in your app.
+  
+  include Merb::ResourceController::DM::IdentityMapSupport
+  
+  
+  # This will give you the 'set_action_timeout' class method.
+  
+  extend Merb::ResourceController::ActionTimeout
+  
+  
   # If you specify an action_timeout greater or equal to 1
   # and you have the 'system_timer' gem installed, the action
   # will timeout after the given amount of seconds.
+  #
   # For a more detailed explanation on the topic have a look at
   # http://adam.blog.heroku.com/past/2008/6/17/battling_wedged_mongrels_with_a/
   #
-  # Of course, feel free to enable the identity map on single
-  # controllers instead of Application controller as shown in this example
+  # Feel free to set action timeouts for single controllers 
+  # instead of doing so in Application controller, which sets 
+  # the same action timeout for every controller action in your app.
   
-  enable_identity_map :action_timeout => 1
+  set_action_timeout 1
+  
+  
+  # This will give you the 'controlling' class method
+  
+  extend Merb::ResourceController::Mixin::ClassMethods
   
 end
 

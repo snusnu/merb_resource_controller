@@ -1,3 +1,3 @@
 class Articles < Application
-  controlling :articles  
+  controlling :articles
 end

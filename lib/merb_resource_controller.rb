@@ -4,7 +4,8 @@ if defined?(Merb::Plugins)
   # Merb gave me a Merb::Plugins.config hash
   # i felt free to put my stuff in my piece of it
   Merb::Plugins.config[:merb_resource_controller] = {
-    :identity_map => true
+    :identity_map => true,
+    :action_timeout => true
   }
   
   Merb::BootLoader.before_app_loads do
@@ -15,6 +16,9 @@ if defined?(Merb::Plugins)
     require DIR / 'resource_controller'
     if Merb::Plugins.config[:merb_resource_controller][:identity_map]
       require DIR / 'identity_map_support'
+    end
+    if Merb::Plugins.config[:merb_resource_controller][:action_timeout]
+      require DIR / 'action_timeout_support'
     end
   end
   
