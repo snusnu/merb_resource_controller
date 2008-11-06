@@ -1,6 +1,8 @@
 h2. merb_resource_controller
 
-A Merb plugin that provides the default restful actions for controllers and allows for easy customization.
+A merb plugin that provides the default @CRUD@ actions for controllers and allows for easy customization
+of the generated actions. @merb_resource_controller@ only supports @datamapper@ so far. Implementing support
+for @active_record@ would be trivial, but i have no need for it.
 
 Currently @merb_resource_controller@ supports _toplevel resources_ and _resources with not more than one parent_.
 @merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
@@ -17,8 +19,28 @@ h2. Usage Examples
 <pre>
 <code>
 class Application < Merb::Controller
+  
   # This will give you the 'controlling' class method
   extend Merb::ResourceController::Mixin::ClassMethods
+  
+  # This will give you the 'enable_identity_map' class method
+  extend Merb::ResourceController::DM::IdentityMapSupport
+  
+  # This will wrap all actions inside a dm repository block
+  # For more information on dm identity maps have a look at
+  # http://datamapper.org/doku.php?id=docs:identity_map
+  #
+  # If you specify an action_timeout greater or equal to 1
+  # and you have the 'system_timer' gem installed, the action
+  # will timeout after the given amount of seconds.
+  # For a more detailed explanation on the topic have a look at
+  # http://adam.blog.heroku.com/past/2008/6/17/battling_wedged_mongrels_with_a/
+  #
+  # Of course, feel free to enable the identity map on single
+  # controllers instead of Application controller as shown in this example
+  
+  enable_identity_map :action_timeout => 1
+  
 end
 
 class Articles < Application
