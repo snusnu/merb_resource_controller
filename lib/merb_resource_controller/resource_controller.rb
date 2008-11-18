@@ -8,18 +8,7 @@ module Merb
     module Mixin
   
       module ClassMethods
-    
-        # DEFAULTS to the following if no block is given
-        # ----------------------------------------------
-        # controlling :projects do |p|
-        #   p.action :index,   :provides => [ :json, :yaml ], :on => :collection,
-        #   p.action :show
-        #   p.action :new,     :provides => :html
-        #   p.action :edit,    :provides => :html
-        #   p.action :create  
-        #   p.action :update
-        #   p.action :destroy
-        # end
+        
         def controlling(name, options = {})
           options = { :defaults => true, :flash => true, :use => :all }.merge!(options)
           @resource_proxy = Merb::ResourceController::ResourceProxy.new(name, options)
@@ -44,66 +33,29 @@ module Merb
         end
         
         
-        def irrelevant_params
-          @irrelevant_params ||= %w(format action controller)
+        def has_parent?
+          resource_proxy.has_parent? && has_parent_param?
         end
-        
-        def relevant_params
-          @relevant_params ||= params.reject { |k,v| irrelevant_params.include?(k) }
-        end
-        
-        
-        def has_parents?
-          resource_proxy.has_parents? && has_parent_param?
-        end
-        
-        alias :has_parent? :has_parents?
-        
-        
-        def parent_resources
-          resource_proxy.parent_resources
-        end
-        
-        def parent_resource
-          resource_proxy.parent_resource
-        end
-        
-        
-        def parents
-          resource_proxy.parents.each do |parent|
-            parent[:class].get(params[parent[:key]])
-          end
-        end
-        
-        def parent
-          parent_resource.get(parent_param)
-        end
-        
         
         def has_parent_param?
           !!parent_param
         end
         
-        alias :has_parent_params? :has_parent_param?
-        
-        
-        def parent_params
-          resource_proxy.parent_keys.inject([]) do |parents, key|
-            parents << params[key]
-          end
+        def parent
+          resource_proxy.parent_resource.get(parent_param)
         end
-                
+        
         def parent_param
           params[resource_proxy.parent_key]
         end
         
         
         def load_collection(conditions = {})
-          resource_proxy.all(query_conditions(conditions))
+          resource_proxy.load_collection(params)
         end
         
-        def load_member(id, conditions = {})
-          resource_proxy.get(id, query_conditions(conditions))
+        def load_member(conditions = {})
+          resource_proxy.load_member(params)
         end
         
         
@@ -111,21 +63,21 @@ module Merb
           instance_variable_set("@#{collection_name}", obj)
         end
         
-        def collection
-          instance_variable_get("@#{collection_name}")
-        end
-        
-        
-        def new_member(attributes = {})
-          resource_proxy.new(attributes)
-        end
-        
         def set_member(obj)
           instance_variable_set("@#{member_name}", obj)
         end
         
+        
+        def collection
+          instance_variable_get("@#{collection_name}")
+        end
+        
         def member
           instance_variable_get("@#{member_name}")
+        end
+        
+        def new_member(attributes = {})
+          resource_proxy.new(attributes)
         end
         
         
@@ -140,18 +92,6 @@ module Merb
         
         def flash_supported?
           self.kind_of?(FlashSupport)
-        end
-        
-        # TODO: try to get dm bug shown in http://gist.github.com/22146 fixed
-        # once it is fixed, we can only return the real conditions, and not the
-        # whole hash including the :conditions key, which will simplify logic
-        # inside this method.
-        def query_conditions(conditions = {})
-          if conditions.empty?
-            relevant_params.empty? ? {} : { :conditions => relevant_params }
-          else
-            conditions
-          end
         end
     
       end

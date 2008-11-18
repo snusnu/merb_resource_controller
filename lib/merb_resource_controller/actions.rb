@@ -26,7 +26,7 @@ module Merb
         # end
         
         def show
-          set_member(load_member(params[:id]))
+          set_member(load_member)
           raise Merb::ControllerExceptions::NotFound unless member
           display member
         end
@@ -58,7 +58,7 @@ module Merb
         # end
         
         def edit
-          set_member(load_member(params[:id]))
+          set_member(load_member)
           raise Merb::ControllerExceptions::NotFound unless member
           display member
         end
@@ -107,7 +107,7 @@ module Merb
         # end
         
         def update
-          set_member(load_member(params[:id]))
+          set_member(load_member)
           raise Merb::ControllerExceptions::NotFound unless member
           if member.update_attributes(params[member_name])
             options = flash_supported? ? { :message => successful_update_messages } : {}
@@ -137,7 +137,7 @@ module Merb
         # end
         
         def destroy
-          set_member(load_member(params[:id]))
+          set_member(load_member)
           raise Merb::ControllerExceptions::NotFound unless member
           if member.destroy
             options = flash_supported? ? { :message => successful_destroy_messages } : {}

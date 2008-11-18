@@ -4,8 +4,8 @@ describe Merb::ResourceController::ResourceProxy do
   
   describe "every nested resource", :shared => true do
     
-    it "should know that it has parent resource(s)" do
-      @p.has_parents?.should be_true
+    it "should know that it has parent resource" do
+      @p.has_parent?.should be_true
     end
     
   end
@@ -13,7 +13,7 @@ describe Merb::ResourceController::ResourceProxy do
   describe "every toplevel resource", :shared => true do
     
     it "should know that it has no parent resource(s)" do
-      @p.has_parents?.should be_false
+      @p.has_parent?.should be_false
     end
     
   end
@@ -81,7 +81,72 @@ describe Merb::ResourceController::ResourceProxy do
     end
     
   end
-  
+
+
+  describe "with no parent resource" do
+    
+    before(:each) do
+      options = { :defaults => true, :flash => true, :use => :all }
+      @p = Merb::ResourceController::ResourceProxy.new(:articles, options)
+    end
+    
+    it_should_behave_like "every toplevel resource"
+        
+    it "should return an empty array for parent_resources" do
+      @p.parent_resources.should == []
+    end
+            
+    it "should return nil for parent_resource" do
+      @p.parent_resource.should be_nil
+    end
+    
+                
+    it "should return an empty array for parent_keys" do
+      @p.parent_keys.should == []
+    end
+                    
+    it "should return nil for parent_key" do
+      @p.parent_key.should be_nil
+    end
+    
+    
+    
+    it "should return an array with one member for nesting strategy" do
+      @p.nesting_strategy.should == [ Article ]
+    end
+
+    it "should know its nesting_level" do
+      @p.nesting_level.should == 1
+    end
+
+    it "should be able to build a nesting strategy instance for a collection route" do
+      params = {}
+      @p.nesting_strategy_instance(params).should == [ [Article,nil] ]
+    end
+    
+    it "should be able to build a nesting strategy instance for a member route" do
+      params = { "id" => 1}
+      @p.nesting_strategy_instance(params).should == [ [Article,1] ]
+    end
+
+    it "should be able to load the collection behind a nesting strategy instance for a collection route" do
+      Article.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+
+      params = {}
+      @p.load_collection(params).should == Article.all
+    end
+
+    it "should be able to load the member behind a nesting strategy instance for a member route" do
+      Article.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+      
+      params = { "id" => 1 }
+      @p.load_member(params).should == Article.get(1)
+    end
+    
+  end
+    
     
   describe "with a single parent resource" do
     
@@ -115,6 +180,52 @@ describe Merb::ResourceController::ResourceProxy do
       @p.parent_key.should == "article_id"
     end
     
+    
+    
+    it "should be able to build a nesting strategy" do
+      @p.nesting_strategy.should == [ Article, Comment ]
+    end
+
+    it "should know its nesting_level" do
+      @p.nesting_level.should == 2
+    end
+
+    it "should be able to build a nesting strategy instance for a collection route" do
+      params = { "article_id" => 1 }
+      @p.nesting_strategy_instance(params).should == [ [Article,1], [Comment,nil] ]
+    end
+    
+    it "should be able to build a nesting strategy instance for a member route" do
+      params = { "article_id" => 1, "id" => 1}
+      @p.nesting_strategy_instance(params).should == [ [Article,1], [Comment,1] ]
+    end
+
+    it "should be able to load the collection behind a nesting strategy instance for a collection route" do
+      Article.all.destroy!
+      Comment.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+      c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      
+      # be extra sure
+      Article.get(1).comments.should == [ c ]
+
+      params = { "article_id" => 1 }
+      @p.load_collection(params).should == Article.get(1).comments
+    end
+
+    it "should be able to load the member behind a nesting strategy instance for a member route" do
+      Article.all.destroy!
+      Comment.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+      c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      
+      # be extra sure
+      Article.get(1).comments.get(1).should == c
+      
+      params = { "article_id" => 1, "id" => 1 }
+      @p.load_member(params).should == Article.get(1).comments.get(1)
+    end
+    
   end
       
   describe "with multiple parent resources with default keys" do
@@ -133,22 +244,74 @@ describe Merb::ResourceController::ResourceProxy do
       @p.belongs_to?(:comment).should be_true
     end
     
-        
-    it "should be able to load all parent resources" do
-      @p.parent_resources.should == [ Article, Comment ]
-    end
-            
     it "should be able to load the immediate parent resource" do
       @p.parent_resource.should == Comment
     end
-    
+     
+    it "should be able to load all parent resources" do
+      @p.parent_resources.should == [ Article, Comment ]
+    end
     
     it "should be able to return all parent resource param keys" do
       @p.parent_keys.should == [ "article_id", "comment_id" ]
     end
+        
+    it "should be able to return all parent params" do
+      params = { "article_id" => 1, "comment_id" => 2}
+      @p.parent_params(params).should == [ 1, 2 ]
+    end
 
     it "should be able to return its immediate parent resource param key" do
       @p.parent_key.should == "comment_id"
+    end
+    
+            
+    it "should be able to build a nesting strategy" do
+      @p.nesting_strategy.should == [ Article, Comment, Rating ]
+    end
+                
+    it "should know its nesting_level" do
+      @p.nesting_level.should == 3
+    end
+    
+    it "should be able to build a nesting strategy instance for a collection route" do
+      params = { "article_id" => 1, "comment_id" => 2}
+      @p.nesting_strategy_instance(params).should == [ [Article,1], [Comment,2], [Rating,nil] ]
+    end
+             
+    it "should be able to build a nesting strategy instance for a member route" do
+      params = { "article_id" => 1, "comment_id" => 2, "id" => 3}
+      @p.nesting_strategy_instance(params).should == [ [Article,1], [Comment,2], [Rating,3] ]
+    end
+                    
+    it "should be able to load the collection behind a nesting strategy instance for a collection route" do
+      Article.all.destroy!
+      Comment.all.destroy!
+      Rating.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+      Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      r = Rating.create(:id => 1, :comment_id => 1, :rate => 1)
+      
+      # be extra sure
+      Article.get(1).comments.get(1).ratings.should == [ r ]
+      
+      params = { "article_id" => 1, "comment_id" => 1 }
+      @p.load_collection(params).should == Article.get(1).comments.get(1).ratings
+    end
+
+    it "should be able to load the member behind a nesting strategy instance for a member route" do
+      Article.all.destroy!
+      Comment.all.destroy!
+      Rating.all.destroy!
+      Article.create(:id => 1, :title => "title", :body => "body")
+      Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      r = Rating.create(:id => 1, :comment_id => 1, :rate => 1)
+      
+      # be extra sure
+      Article.get(1).comments.get(1).ratings.get(1).should == r
+      
+      params = { "article_id" => 1, "comment_id" => 1, "id" => 1 }
+      @p.load_member(params).should == Article.get(1).comments.get(1).ratings.get(1)
     end
     
   end

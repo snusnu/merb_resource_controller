@@ -2,6 +2,8 @@ module Merb
   module ResourceController
     
     class ResourceProxy
+      
+      ID_PARAM = "id"
   
       attr_reader :resource, :parents, :actions, :registered_methods
       
@@ -11,6 +13,12 @@ module Merb
         @specific_methods_registered = options[:use] != :all
         register_default_actions! if options[:defaults]
         register_methods!(options[:use])
+      end
+      
+      def action(name, options = {})
+        options = { :to => name.to_sym, :scope => :collection }.merge(options)
+        # raise_if_invalid_options!(options)
+        @actions << { :name => name.to_sym }.merge(options)
       end
       
       # ----------------------------------------------------------------------------------------
@@ -56,9 +64,55 @@ module Merb
         @parents.any? { |h| h[:name] == parent }
       end
       
+      def has_parent?
+        !@parents.empty?
+      end
       
       def has_parents?
-        !@parents.empty?
+        @parents.size > 1
+      end
+      
+      
+      def load_collection(params)
+        nesting_strategy_instance(params).inject(nesting_strategy.first) do |memo, r|
+          r[1] ? r[0].get(r[1]).send(nested_collection(r[0])) : r[0].all
+        end
+      end
+      
+      def load_member(params)
+        load_collection(params.except(ID_PARAM)).get(params[ID_PARAM])
+      end
+      
+      
+      def nesting_strategy
+        parent_resources << @resource
+      end
+      
+      def nesting_strategy_instance(params)
+        nesting_strategy.zip(parent_params(params) << params["id"])
+      end
+      
+      
+      def nesting_level
+        nesting_strategy.size
+      end
+      
+      def nested_collection(member)
+        if !nesting_strategy.include?(member) || nesting_strategy.last == member  
+          raise ArgumentError, "#{member} has no nested collection registered."
+        else
+          child_resource_idx = nesting_strategy.index(member) + 1
+          Extlib::Inflection.tableize(nesting_strategy[child_resource_idx].name)
+        end
+      end
+      
+      
+      def valid_params?(params)
+        parent_keys.all? { |pk| params.include?(pk) }
+      end
+      
+      def parent_params(params)
+        valid_params?(params) ? parent_keys.map { |k| params[k] } : []
       end
       
       
@@ -69,7 +123,7 @@ module Merb
       
       # the immediate parent resource
       def parent_resource
-        has_parents? ? @parents.last[:class] : nil
+        has_parent? ? @parents.last[:class] : nil
       end
       
       
@@ -80,14 +134,7 @@ module Merb
       
       # the immediate parent resource key
       def parent_key
-        @parents.last[:key]
-      end
-      
-  
-      def action(name, options = {})
-        options = { :to => name.to_sym, :scope => :collection }.merge(options)
-        # raise_if_invalid_options!(options)
-        @actions << { :name => name.to_sym }.merge(options)
+        @parents.last ? @parents.last[:key] : nil
       end
       
       
