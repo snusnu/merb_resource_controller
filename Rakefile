@@ -10,21 +10,21 @@ GEM_VERSION = "0.1.0"
 AUTHOR = "Martin Gamsjaeger"
 EMAIL = "gamsnjaga@gmail.com"
 HOMEPAGE = "http://merbivore.com/"
-SUMMARY = "Merb plugin that provides the default restful actions for controllers."
+SUMMARY = "A merb plugin that provides the default restful actions for controllers."
 
 spec = Gem::Specification.new do |s|
-  s.rubyforge_project = 'merb'
+  s.rubyforge_project = 'merb_resource_controller'
   s.name = GEM_NAME
   s.version = GEM_VERSION
   s.platform = Gem::Platform::RUBY
-  s.has_rdoc = true
+  s.has_rdoc = false
   s.extra_rdoc_files = [ "LICENSE", 'TODO']
   s.summary = SUMMARY
   s.description = s.summary
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  s.add_dependency('merb', '>= 0.9.13')
+  s.add_dependency('merb-core', '~> 1.0')
   s.require_path = 'lib'
   s.files = %w(LICENSE README.textile Rakefile TODO) + Dir.glob("{lib,spec}/**/*")
 end
