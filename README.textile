@@ -4,7 +4,6 @@ A merb plugin that provides the default @CRUD@ actions for controllers and allow
 of the generated actions. @merb_resource_controller@ only supports @datamapper@ so far. Implementing support
 for @active_record@ would be trivial, but i have no need for it.
 
-Currently @merb_resource_controller@ supports _toplevel resources_ and _resources with not more than one parent_.
 @merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
 will "adjust" its actions accordingly. Have a look at @Merb::ResourceController::Mixin::InstanceMethods@ and 
 @Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/resource_controller.rb@ 
@@ -85,7 +84,7 @@ def index
 end
 
 def show
-  set_member(load_member(params[:id]))
+  set_member(load_member)
   raise Merb::ControllerExceptions::NotFound unless member
   display member
 end
@@ -96,7 +95,7 @@ def new
 end
 
 def edit
-  set_member(load_member(params[:id]))
+  set_member(load_member)
   raise Merb::ControllerExceptions::NotFound unless member
   display member
 end
@@ -113,7 +112,7 @@ def create
 end
 
 def update
-  set_member(load_member(params[:id]))
+  set_member(load_member)
   raise Merb::ControllerExceptions::NotFound unless member
   if member.update_attributes(params[member_name])
     options = flash_supported? ? { :message => successful_update_messages } : {}
@@ -125,7 +124,7 @@ def update
 end
 
 def destroy
-  set_member(load_member(params[:id]))
+  set_member(load_member)
   raise Merb::ControllerExceptions::NotFound unless member
   if member.destroy
     options = flash_supported? ? { :message => successful_destroy_messages } : {}
@@ -163,5 +162,4 @@ h2. TODO
 
 # Support @provides@ and @only_provides@
 # Support user stamps (aka created_by and updated_by)
-# Support arbitrarily nested resources
 # Support pagination once an _official_ merb pagination solution exists
