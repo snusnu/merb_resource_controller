@@ -169,10 +169,10 @@ module Merb
       end
       
       def register_default_actions!
-        action :index,  :provides => [ :json, :yaml ]
+        action :index
         action :show
-        action :new,    :provides => :html
-        action :edit,   :provides => :html
+        action :new
+        action :edit
         action :create  
         action :update
         action :destroy

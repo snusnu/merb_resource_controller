@@ -42,6 +42,7 @@ module Merb
         # end
         
         def new
+          only_provides :html
           set_member(new_member)
           display member
         end
@@ -58,6 +59,7 @@ module Merb
         # end
         
         def edit
+          only_provides :html
           set_member(load_member)
           raise Merb::ControllerExceptions::NotFound unless member
           display member
