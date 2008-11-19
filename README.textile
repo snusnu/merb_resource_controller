@@ -96,11 +96,13 @@ def show
 end
 
 def new
+  only_provides :html
   set_member(new_member)
   display member
 end
 
 def edit
+  only_provides :html
   set_member(load_member)
   raise Merb::ControllerExceptions::NotFound unless member
   display member
