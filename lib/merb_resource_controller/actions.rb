@@ -89,7 +89,7 @@ module Merb
         end
         
         def redirect_on_successful_create
-          resource(*(has_parent? ? [ parent, member ] : [ member ]))
+          resource(*(has_parent? ? [ *parents ] + [ member ] : [ member ]))
         end
         
       end
@@ -119,7 +119,7 @@ module Merb
         end
         
         def redirect_on_successful_update
-          resource(*(has_parent? ? [ parent, member ] : [ member ]))
+          resource(*(has_parent? ? [ *parents ] + [ member ] : [ member ]))
         end
         
       end
@@ -148,7 +148,7 @@ module Merb
         end
         
         def redirect_on_successful_destroy
-          resource(*(has_parent? ? [ parent, collection_name ] : [ collection_name ]))
+          resource(*(has_parent? ? [ *parents ] + [ collection_name ] : [ collection_name ]))
         end
         
       end

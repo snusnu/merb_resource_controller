@@ -34,7 +34,9 @@ Merb::Router.prepare do
     end
   end
   
-  resources :comments
+  resources :comments do
+    resources :ratings
+  end
 
   # This is the default route for /:controller/:action/:id
   # This is fine for most cases.  If you're heavily using resource-based

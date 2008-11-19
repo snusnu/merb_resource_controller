@@ -62,7 +62,13 @@ end
 
 class Comments < Application
   controlling :comments do |c|
-    c.belongs_to :article # , :key => :article_id
+    c.belongs_to :article
+  end
+end
+
+class Ratings < Application
+  controlling :ratings do |r|
+    r.belongs_to [ :article, :comment ]
   end
 end
 </code>
@@ -145,15 +151,15 @@ h2. Additional Helper Methods
 # These are the methods you can override to this effect
 
 def redirect_on_successful_create
-  resource(*(has_parent? ? [ parent, member ] : [ member ]))
+  resource(*(has_parent? ? [ *parents ] + [ member ] : [ member ]))
 end
 
 def redirect_on_successful_update
-  resource(*(has_parent? ? [ parent, member ] : [ member ]))
+  resource(*(has_parent? ? [ *parents ] + [ member ] : [ member ]))
 end
 
 def redirect_on_successful_destroy
-  resource(*(has_parent? ? [ parent, collection_name ] : [ collection_name ]))
+  resource(*(has_parent? ? [ *parents ] + [ collection_name ] : [ collection_name ]))
 end
 </code>
 </pre>

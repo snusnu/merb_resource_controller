@@ -45,6 +45,12 @@ module Merb
           resource_proxy.parent_resource.get(parent_param)
         end
         
+        def parents
+          resource_proxy.parents.map do |parent|
+            parent[:class].get(params[parent[:key]])
+          end
+        end
+        
         def parent_param
           params[resource_proxy.parent_key]
         end
