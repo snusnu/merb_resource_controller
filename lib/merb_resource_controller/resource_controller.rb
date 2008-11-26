@@ -41,8 +41,8 @@ module Merb
           !!parent_param
         end
         
+        
         def parent
-          #resource_proxy.parent_resource.get(parent_param)
           resource_proxy.path_to_resource(params)[-2].last
         end
         

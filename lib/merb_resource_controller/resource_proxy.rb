@@ -3,8 +3,6 @@ module Merb
     
     class ResourceProxy
       
-      ID_PARAM = "id"
-  
       attr_reader :resource, :parents, :actions, :registered_methods
       
       def initialize(resource, options = {})
@@ -74,29 +72,6 @@ module Merb
       end
       
       
-      def root
-        nesting_strategy.first
-      end
-      
-      def nesting_level
-        nesting_strategy.size
-      end
-      
-      def nesting_strategy
-        parent_resources << [ @resource, @singleton ]
-      end
-      
-      def nesting_strategy_params(params)
-        parent_params(params) << params["id"]
-      end
-      
-      def nesting_strategy_template(params)
-        idx = -1
-        nesting_strategy_params(params).map do |nsp|
-          nesting_strategy[idx += 1] << nsp
-        end
-      end
-      
       def path_to_resource(params)
         nesting_strategy_instance(nesting_strategy_template(params)).map do |el|
           [ if el[2]
@@ -131,8 +106,6 @@ module Merb
                 nesting_strategy_instance(nst, idx + 1)
               end
             else
-              #puts "XXX: nst[#{idx}] = #{nst[idx].inspect}"
-              #puts "XXX: nst[#{idx - 1}] = #{nst[idx - 1].inspect}"
               nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]), nra(nst[idx][0], nst) ]
               nesting_strategy_instance(nst, idx + 1)
             end
@@ -142,6 +115,7 @@ module Merb
         end
       end
 
+      # nested_resource_accessor
       def nra(member, nst)
         member = member.is_a?(Class) ? member : member.class
         return nil unless idx = nst.map { |el| el[0] }.index(member)
@@ -158,8 +132,34 @@ module Merb
       end
       
       
+      def nesting_strategy_template(params)
+        idx = -1
+        nesting_strategy_params(params).map do |nsp|
+          nesting_strategy[idx += 1] << nsp
+        end
+      end
+      
+      def nesting_strategy_params(params)
+        parent_params(params) << params["id"]
+      end
+      
+      def nesting_strategy
+        parent_resources << [ @resource, @singleton ]
+      end
+      
+      def nesting_level
+        nesting_strategy.size
+      end
+      
+      
+      # all parent parameters
       def parent_params(params)
         parent_keys.map { |k| params[k] }
+      end
+      
+      # the immediate parent parameter    
+      def parent_param(params)
+        parent_params(params).last
       end
       
       
@@ -216,13 +216,9 @@ module Merb
       end
       
       def register_default_actions!
-        action :index
-        action :show
-        action :new
-        action :edit
-        action :create  
-        action :update
-        action :destroy
+        [ :index, :show, :new, :edit, :create, :update, :destroy ].each do |a|
+          action(a)
+        end
       end
       
       
@@ -237,100 +233,21 @@ module Merb
         end
       end
       
-      def raise_if_invalid_options!(options)
-        if options[:use] == :web_methods && !@resource.respond_to?(:web_methods)
-          raise WebMethodsNotAvailable, "require 'dm-is-online' if you want to use web_methods"
-        end
-        meth = options[:to]        
-        if options[:use] == :all
-          msg = "merb_resource_controller: #{@resource}.public_methods.include?(:#{meth}) == false"
-          raise InvalidRoute, msg unless @resource.public_methods.include?(meth)
-        elsif options[:use] == :web_methods
-          msg = "merb_resource_controller: #{@resource}.web_methods.include?(:#{meth}) == false"
-          raise InvalidRoute, msg unless @resource.web_methods.include?(meth)
-        else
-          msg = "merb_resource_controller: Invalid option[:use] = #{options[:use]}, using :all instead"
-          Merb::Logger.warn(msg)
-        end
-      end
-      
-      
-      # def nst_root(params)
-      #   nesting_strategy_template(params).first
-      # end
-      # 
-      # def load_collection(params, singleton_resource = false)
-      #   nesting_strategy_instance(params, singleton_resource).inject(root) do |memo, s|
-      #     s[1] && s[2] ? s[1].send(s[2]) : s[0].send(s[2])
+      # def raise_if_invalid_options!(options)
+      #   if options[:use] == :web_methods && !@resource.respond_to?(:web_methods)
+      #     raise WebMethodsNotAvailable, "require 'dm-is-online' if you want to use web_methods"
       #   end
-      # end
-      #             
-      # def load_collection(params, singleton_resource = false)
-      #   nsi = nesting_strategy_instance(params, singleton_resource)
-      #   idx = -1
-      #   nsi.inject(root) do |memo, s|
-      #     idx += 1
-      #     if s[1]
-      #       if s[2]
-      #         s[1].send(s[2])
-      #       else
-      #         s[1]
-      #       end
-      #     else
-      #       if nsi[idx + 1]
-      #         nsi[idx + 1][0]
-      #       else
-      #         if s[2]
-      #           s[0].send(s[2])
-      #         else
-      #           memo
-      #         end
-      #       end
-      #     end
+      #   meth = options[:to]        
+      #   if options[:use] == :all
+      #     msg = "merb_resource_controller: #{@resource}.public_methods.include?(:#{meth}) == false"
+      #     raise InvalidRoute, msg unless @resource.public_methods.include?(meth)
+      #   elsif options[:use] == :web_methods
+      #     msg = "merb_resource_controller: #{@resource}.web_methods.include?(:#{meth}) == false"
+      #     raise InvalidRoute, msg unless @resource.web_methods.include?(meth)
+      #   else
+      #     msg = "merb_resource_controller: Invalid option[:use] = #{options[:use]}, using :all instead"
+      #     Merb::Logger.warn(msg)
       #   end
-      # end
-      # 
-      # def load_member(params, singleton_resource = false)
-      #   load_collection(params.except(ID_PARAM), singleton_resource).get(params[ID_PARAM])
-      # end      
-      # 
-      #                    
-      # def nesting_strategy_instance(params, singleton = false)
-      #   nst, nsi = nesting_strategy_template(params), []
-      #   puts "nesting_strategy_template: #{nst.inspect}"
-      #   
-      #   nst.each_with_index do |s, idx|
-      #     if s[1]
-      #       path_component = s[0].get(s[1])
-      #       if nst[idx + 1]
-      #         if nst[idx + 1][1]
-      #           nsi << [ s[0], path_component, nested_collection_name(s[0]) ]
-      #         else
-      #           nsi << [ s[0], path_component, singleton ? nested_member_name(s[0]) : nested_collection_name(s[0]) ]
-      #         end
-      #       else
-      #         nsi << [ s[0], path_component, nil ]
-      #       end
-      #     else
-      #       if nst[idx + 1]
-      #         # do nothing
-      #       else
-      #         nsi << [ s[0], nil, :all ]
-      #       end
-      #     end
-      #   end
-      #   nsi
-      # end
-      # 
-      # 
-      # def nested_collection_name(member)
-      #   resource_idx = nesting_strategy.index(member)
-      #   return nil if !resource_idx || (resource_idx && resource_idx >= nesting_level - 1)
-      #   Extlib::Inflection.tableize(nesting_strategy[resource_idx + 1].name).to_sym
-      # end
-      # 
-      # def nested_member_name(member)
-      #   nested_collection_name(member.is_a?(Class) ? member : member.class).to_s.singularize.to_sym
       # end
   
     end
