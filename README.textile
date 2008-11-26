@@ -5,12 +5,31 @@ of the generated actions. @merb_resource_controller@ only supports @datamapper@ 
 for @active_record@ would be trivial, but i have no need for it.
 
 @merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
-will "adjust" its actions accordingly. Have a look at @Merb::ResourceController::Mixin::InstanceMethods@ and 
-@Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/resource_controller.rb@ 
-to see what methods will be available inside your controllers, in addition to the generated standard @CRUD@ actions. 
+will "adjust" its actions accordingly. It will also initialize all the instance variables
+you would expect for your chosen nesting strategy. This means for example, that when you have an URL like
+@/articles/1/comments@, you will have an @@article@ variable pointing to @Article.get(1)@ and a @@comments@ variable
+pointing to @Article.get(1).comments@. It will even be smart enough to give you @@article@ and @@editor@ if you have
+a singleton resource nested like @/articles/1/editor@. For details on how to declare singleton resources, have a
+look at the _Usage Examples_ section below.
+
+Currently, @merb_resource_controller@ needs an extra specification inside the controller to define the nesting strategy
+to use. This shouldn't really be necessary, since this information could be easily provided by the @Merb::Router@.
+I'm planning to have a look into this soon! With that in place, resource_controllers could be _3 liners_ that just do
+what you would expect them to do, if you don't step off the beaten track :-) Still, if you decide to do so, it will try
+to get out of your way as much as possible. 
+
+h2. More Information
+
+Have a look at @Merb::ResourceController::Actions@, @Merb::ResourceController::Mixin::InstanceMethods@ and 
+@Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/actions.rb@ and 
+@lib/merb_resource_controller/resource_controller.rb@ to see what methods will be available inside your controllers.
+
 Alternatively you can continue reading this README and glance through the code listed under _Defined Actions_ 
 and _Additional Helper Methods_. Almost all of the available methods are used from inside the standard actions 
-that get included into your controller. 
+that get included into your controller.
+
+Of course, you should also have a look at the specs, to get a more concrete idea of how @merb_resource_controller@
+behaves under the given circumstances.
 
 
 h2. Usage Examples
@@ -71,6 +90,26 @@ class Ratings < Application
     r.belongs_to [ :article, :comment ]
   end
 end
+
+class Editors < Application
+  
+  controlling(:editors, :singleton => true) do |e|
+    e.belongs_to :article
+  end
+  
+  def redirect_on_successful_create
+    resource(parent, :editor)
+  end
+    
+  def redirect_on_successful_update
+    resource(parent, :editor)
+  end
+      
+  def redirect_on_successful_destroy
+    resource(parent)
+  end
+  
+end
 </code>
 </pre>
 
@@ -85,30 +124,32 @@ h2. Defined Actions
 # by these defined actions
   
 def index
-  set_collection(load_collection)
-  display collection
+  load_resource
+  display requested_resource
 end
 
 def show
-  set_member(load_member)
-  raise Merb::ControllerExceptions::NotFound unless member
-  display member
+  load_resource
+  raise Merb::ControllerExceptions::NotFound unless requested_resource
+  display requested_resource
 end
 
 def new
   only_provides :html
+  load_resource
   set_member(new_member)
   display member
 end
 
 def edit
   only_provides :html
-  set_member(load_member)
-  raise Merb::ControllerExceptions::NotFound unless member
-  display member
+  load_resource
+  raise Merb::ControllerExceptions::NotFound unless requested_resource
+  display requested_resource
 end
 
 def create
+  load_resource
   set_member(new_member(params[member_name]))
   if member.save
     options = flash_supported? ? { :message => successful_create_messages } : {}
@@ -120,21 +161,21 @@ def create
 end
 
 def update
-  set_member(load_member)
-  raise Merb::ControllerExceptions::NotFound unless member
-  if member.update_attributes(params[member_name])
+  load_resource
+  raise Merb::ControllerExceptions::NotFound unless requested_resource
+  if requested_resource.update_attributes(params[member_name])
     options = flash_supported? ? { :message => successful_update_messages } : {}
     redirect redirect_on_successful_update, options
   else
     message.merge!(failed_update_messages) if flash_supported?
-    display member, :edit
+    display requested_resource, :edit
   end
 end
 
 def destroy
-  set_member(load_member)
-  raise Merb::ControllerExceptions::NotFound unless member
-  if member.destroy
+  load_resource
+  raise Merb::ControllerExceptions::NotFound unless requested_resource
+  if requested_resource.destroy
     options = flash_supported? ? { :message => successful_destroy_messages } : {}
     redirect redirect_on_successful_destroy, options
   else
@@ -168,6 +209,6 @@ end
 
 h2. TODO
 
-# Support @provides@ and @only_provides@
-# Support user stamps (aka created_by and updated_by)
-# Support pagination once an _official_ merb pagination solution exists
+# Customizable support for @provides@ and @only_provides@
+# Support for user stamps (aka created_by and updated_by)
+# Support for pagination once an _official_ merb pagination solution exists
