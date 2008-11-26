@@ -42,7 +42,8 @@ module Merb
         end
         
         def parent
-          resource_proxy.parent_resource.get(parent_param)
+          #resource_proxy.parent_resource.get(parent_param)
+          resource_proxy.path_to_resource(params)[-2].last
         end
         
         def parents
@@ -56,15 +57,17 @@ module Merb
         end
         
         
-        def load_collection(conditions = {})
-          resource_proxy.load_collection(params)
+        def load_resource
+          resource_proxy.path_to_resource(params).each do |pc|
+            instance_variable_set("@#{pc[0]}", pc[1]) if pc[1]
+          end
         end
         
-        def load_member(conditions = {})
-          resource_proxy.load_member(params)
+        def requested_resource
+          resource_proxy.path_to_resource(params).last.last
         end
         
-        
+         
         def set_collection(obj)
           instance_variable_set("@#{collection_name}", obj)
         end
@@ -87,12 +90,12 @@ module Merb
         end
         
         
-        def collection_name
-          resource_proxy.collection_name
+        def collection_name(resource = nil)
+          resource_proxy.collection_name(resource)
         end
         
-        def member_name
-          resource_proxy.member_name
+        def member_name(resource = nil)
+          resource_proxy.member_name(resource)
         end
         
         

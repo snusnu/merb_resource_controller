@@ -11,8 +11,8 @@ module Merb
         # end
         
         def index
-          set_collection(load_collection)
-          display collection
+          load_resource
+          display requested_resource
         end
         
       end
@@ -26,9 +26,9 @@ module Merb
         # end
         
         def show
-          set_member(load_member)
-          raise Merb::ControllerExceptions::NotFound unless member
-          display member
+          load_resource
+          raise Merb::ControllerExceptions::NotFound unless requested_resource
+          display requested_resource
         end
         
       end
@@ -43,6 +43,7 @@ module Merb
         
         def new
           only_provides :html
+          load_resource
           set_member(new_member)
           display member
         end
@@ -60,9 +61,9 @@ module Merb
         
         def edit
           only_provides :html
-          set_member(load_member)
-          raise Merb::ControllerExceptions::NotFound unless member
-          display member
+          load_resource
+          raise Merb::ControllerExceptions::NotFound unless requested_resource
+          display requested_resource
         end
         
       end
@@ -80,6 +81,7 @@ module Merb
         # end
         
         def create
+          load_resource
           set_member(new_member(params[member_name]))
           if member.save
             options = flash_supported? ? { :message => successful_create_messages } : {}
@@ -109,14 +111,14 @@ module Merb
         # end
         
         def update
-          set_member(load_member)
-          raise Merb::ControllerExceptions::NotFound unless member
-          if member.update_attributes(params[member_name])
+          load_resource
+          raise Merb::ControllerExceptions::NotFound unless requested_resource
+          if requested_resource.update_attributes(params[member_name])
             options = flash_supported? ? { :message => successful_update_messages } : {}
             redirect redirect_on_successful_update, options
           else
             message.merge!(failed_update_messages) if flash_supported?
-            display member, :edit
+            display requested_resource, :edit
           end
         end
         
@@ -139,9 +141,9 @@ module Merb
         # end
         
         def destroy
-          set_member(load_member)
-          raise Merb::ControllerExceptions::NotFound unless member
-          if member.destroy
+          load_resource
+          raise Merb::ControllerExceptions::NotFound unless requested_resource
+          if requested_resource.destroy
             options = flash_supported? ? { :message => successful_destroy_messages } : {}
             redirect redirect_on_successful_destroy, options
           else

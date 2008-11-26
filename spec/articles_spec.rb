@@ -11,7 +11,7 @@ end
 
 describe "resource(:articles)" do
   
-  describe "GET" do
+  describe "GET", :given => "an Article exists" do
     
     before(:each) do
       @response = request(resource(:articles))

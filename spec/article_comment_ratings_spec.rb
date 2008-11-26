@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 given "a Comment exists" do
+  Rating.all.destroy!
   Comment.all.destroy!
   Article.all.destroy!
   request(
@@ -11,7 +12,7 @@ given "a Comment exists" do
   request(
     resource(Article.first, :comments), 
     :method => "POST", 
-    :params => { :comment => { :id => nil, :body => "wassup" }}
+    :params => { :comment => { :id => nil, :article_id => Article.first.id, :body => "wassup" } }
   )
 end
 
@@ -27,12 +28,12 @@ given "a Rating exists" do
   request(
     resource(Article.first, :comments), 
     :method => "POST", 
-    :params => { :comment => { :id => nil, :article_id => Article.first.id, :body => "wassup" }}
+    :params => { :comment => { :id => nil, :article_id => Article.first.id, :body => "wassup" } }
   )
   request(
     resource(Article.first, Comment.first, :ratings), 
     :method => "POST", 
-    :params => { :rating => { :id => nil, :comment_id => Comment.first.id, :rate => 1 }}
+    :params => { :rating => { :id => nil, :comment_id => Comment.first.id, :rate => 1 } }
   )
 end
 

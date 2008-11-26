@@ -9,12 +9,18 @@ given "an Article exists" do
   )
 end
 
-given "a Comment exists", :given => "an Article exists" do
+given "a Comment exists" do
   Comment.all.destroy!
+  Article.all.destroy!
+  request(
+    resource(:articles), 
+    :method => "POST", 
+    :params => { :article => { :id => nil, :title => "yo", :body => "snusnu" }}
+  )
   request(
     resource(:comments), 
     :method => "POST", 
-    :params => { :comment => { :article_id => Article.first, :body => "yeah" }}
+    :params => { :comment => { :id => nil, :article_id => Article.first.id, :body => "yeah" }}
   )
 end
 
@@ -117,7 +123,7 @@ describe "resource(@comment)", :given => "a Comment exists" do
     before(:each) do
       @comment = Comment.first
       @response = request(resource(@comment), :method => "PUT", 
-        :params => { :comment => {:id => @comment.id} })
+        :params => { :comment => {:id => @comment.id, :body => "changed" } })
     end
   
     it "should redirect to resource(@comment)" do

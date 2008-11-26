@@ -8,7 +8,7 @@ module Merb
       attr_reader :resource, :parents, :actions, :registered_methods
       
       def initialize(resource, options = {})
-        @resource = load_resource(resource)
+        @resource, @singleton = load_resource(resource), !!options[:singleton]
         @actions, @registered_methods, @parents = [], [], []
         @specific_methods_registered = options[:use] != :all
         register_default_actions! if options[:defaults]
@@ -37,17 +37,18 @@ module Merb
       def belongs_to(parent, options = {})
         case parent
         when Symbol then
-          options = { :key => Extlib::Inflection.foreign_key(parent) }.merge(options)
+          options = { :key => Extlib::Inflection.foreign_key(parent), :singleton => false }.merge(options)
           @parents << { :name => parent, :class => load_resource(parent) }.merge(options)
         when Array  then
           parent.each do |p|
             case p
             when Symbol then
-              options = { :key => Extlib::Inflection.foreign_key(p) }
+              options = { :key => Extlib::Inflection.foreign_key(p), :singleton => false }
               @parents << { :name => p, :class => load_resource(p) }.merge(options)
             when Array  then
               if p[0].is_a?(Symbol) && p[1].is_a?(Hash)
-                @parents << { :name => p[0], :class => load_resource(p[0]) }.merge(p[1])
+                options = { :key => Extlib::Inflection.foreign_key(p[0]), :singleton => false }.merge(p[1])
+                @parents << { :name => p[0], :class => load_resource(p[0]) }.merge(options)
               else
                 raise ArgumentError, "use [ Symbol, Hash ] to denote one of multiple parents"
               end
@@ -73,57 +74,103 @@ module Merb
       end
       
       
-      def load_collection(params)
-        nesting_strategy_instance(params).inject(nesting_strategy.first) do |memo, r|
-          r[1] ? r[0].get(r[1]).send(nested_collection(r[0])) : r[0].all
-        end
+      def root
+        nesting_strategy.first
       end
-      
-      def load_member(params)
-        load_collection(params.except(ID_PARAM)).get(params[ID_PARAM])
-      end
-      
-      
-      def nesting_strategy
-        parent_resources << @resource
-      end
-      
-      def nesting_strategy_instance(params)
-        nesting_strategy.zip(parent_params(params) << params["id"])
-      end
-      
       
       def nesting_level
         nesting_strategy.size
       end
       
-      def nested_collection(member)
-        if !nesting_strategy.include?(member) || nesting_strategy.last == member  
-          raise ArgumentError, "#{member} has no nested collection registered."
+      def nesting_strategy
+        parent_resources << [ @resource, @singleton ]
+      end
+      
+      def nesting_strategy_params(params)
+        parent_params(params) << params["id"]
+      end
+      
+      def nesting_strategy_template(params)
+        idx = -1
+        nesting_strategy_params(params).map do |nsp|
+          nesting_strategy[idx += 1] << nsp
+        end
+      end
+      
+      def path_to_resource(params)
+        nesting_strategy_instance(nesting_strategy_template(params)).map do |el|
+          [ if el[2]
+            el[0].name.snake_case.to_sym
+          else
+            el[1] ? el[0].name.snake_case.to_sym : Extlib::Inflection.tableize(el[0].name).to_sym
+          end, el[3] ]
+        end
+      end
+
+      def nesting_strategy_instance(nst, idx = 0)
+        if nst[idx]
+          if idx == 0
+            if nst[idx][2]
+              if nst[idx][1]
+                raise "Toplevel singleton resources are not supported"
+              else
+                nst[idx] = nst[idx] + [ nst[idx][0].get(nst[idx][2]), nra(nst[idx][0], nst) ]
+                nesting_strategy_instance(nst, idx + 1)
+              end
+            else
+              nst[idx] = nst[idx] + [ nst[idx][0].all, nra(nst[idx][0], nst) ]
+              nesting_strategy_instance(nst, idx + 1)
+            end
+          else
+            if nst[idx][2]
+              if nst[idx][1]
+                nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]), nra(nst[idx][0], nst) ]
+                nesting_strategy_instance(nst, idx + 1)
+              else
+                nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]).get(nst[idx][2]), nra(nst[idx][0], nst) ]
+                nesting_strategy_instance(nst, idx + 1)
+              end
+            else
+              #puts "XXX: nst[#{idx}] = #{nst[idx].inspect}"
+              #puts "XXX: nst[#{idx - 1}] = #{nst[idx - 1].inspect}"
+              nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]), nra(nst[idx][0], nst) ]
+              nesting_strategy_instance(nst, idx + 1)
+            end
+          end
         else
-          child_resource_idx = nesting_strategy.index(member) + 1
-          Extlib::Inflection.tableize(nesting_strategy[child_resource_idx].name)
+          nst
+        end
+      end
+
+      def nra(member, nst)
+        member = member.is_a?(Class) ? member : member.class
+        return nil unless idx = nst.map { |el| el[0] }.index(member)
+        if child = nst[idx + 1]
+          model, singleton, id = child[0], child[1], child[2]
+          if id
+            Extlib::Inflection.tableize(model.name).to_sym
+          else
+            singleton ? model.name.snake_case.to_sym : Extlib::Inflection.tableize(model.name).to_sym
+          end
+        else
+          nil
         end
       end
       
       
-      def valid_params?(params)
-        parent_keys.all? { |pk| params.include?(pk) }
-      end
-      
       def parent_params(params)
-        valid_params?(params) ? parent_keys.map { |k| params[k] } : []
+        parent_keys.map { |k| params[k] }
       end
       
       
       # all parent resources
       def parent_resources
-        @parents.map { |h| h[:class] }
+        @parents.map { |h| [ h[:class], h[:singleton] ] }
       end
       
       # the immediate parent resource
       def parent_resource
-        has_parent? ? @parents.last[:class] : nil
+        parent_resources.last
       end
       
       
@@ -138,12 +185,12 @@ module Merb
       end
       
       
-      def collection_name
-        @resource.name.snake_case.pluralize
+      def collection_name(resource = nil)
+        (resource || @resource).name.snake_case.pluralize
       end
       
-      def member_name
-        @resource.name.snake_case
+      def member_name(resource = nil)
+        (resource || @resource).name.snake_case
       end
       
       
@@ -206,6 +253,85 @@ module Merb
           Merb::Logger.warn(msg)
         end
       end
+      
+      
+      # def nst_root(params)
+      #   nesting_strategy_template(params).first
+      # end
+      # 
+      # def load_collection(params, singleton_resource = false)
+      #   nesting_strategy_instance(params, singleton_resource).inject(root) do |memo, s|
+      #     s[1] && s[2] ? s[1].send(s[2]) : s[0].send(s[2])
+      #   end
+      # end
+      #             
+      # def load_collection(params, singleton_resource = false)
+      #   nsi = nesting_strategy_instance(params, singleton_resource)
+      #   idx = -1
+      #   nsi.inject(root) do |memo, s|
+      #     idx += 1
+      #     if s[1]
+      #       if s[2]
+      #         s[1].send(s[2])
+      #       else
+      #         s[1]
+      #       end
+      #     else
+      #       if nsi[idx + 1]
+      #         nsi[idx + 1][0]
+      #       else
+      #         if s[2]
+      #           s[0].send(s[2])
+      #         else
+      #           memo
+      #         end
+      #       end
+      #     end
+      #   end
+      # end
+      # 
+      # def load_member(params, singleton_resource = false)
+      #   load_collection(params.except(ID_PARAM), singleton_resource).get(params[ID_PARAM])
+      # end      
+      # 
+      #                    
+      # def nesting_strategy_instance(params, singleton = false)
+      #   nst, nsi = nesting_strategy_template(params), []
+      #   puts "nesting_strategy_template: #{nst.inspect}"
+      #   
+      #   nst.each_with_index do |s, idx|
+      #     if s[1]
+      #       path_component = s[0].get(s[1])
+      #       if nst[idx + 1]
+      #         if nst[idx + 1][1]
+      #           nsi << [ s[0], path_component, nested_collection_name(s[0]) ]
+      #         else
+      #           nsi << [ s[0], path_component, singleton ? nested_member_name(s[0]) : nested_collection_name(s[0]) ]
+      #         end
+      #       else
+      #         nsi << [ s[0], path_component, nil ]
+      #       end
+      #     else
+      #       if nst[idx + 1]
+      #         # do nothing
+      #       else
+      #         nsi << [ s[0], nil, :all ]
+      #       end
+      #     end
+      #   end
+      #   nsi
+      # end
+      # 
+      # 
+      # def nested_collection_name(member)
+      #   resource_idx = nesting_strategy.index(member)
+      #   return nil if !resource_idx || (resource_idx && resource_idx >= nesting_level - 1)
+      #   Extlib::Inflection.tableize(nesting_strategy[resource_idx + 1].name).to_sym
+      # end
+      # 
+      # def nested_member_name(member)
+      #   nested_collection_name(member.is_a?(Class) ? member : member.class).to_s.singularize.to_sym
+      # end
   
     end
   
