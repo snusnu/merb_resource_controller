@@ -1,6 +1,6 @@
 class Editors < Application
   
-  controlling(:editors, :singleton => true) do |e|
+  controlling :editor, :singleton => true do |e|
     e.belongs_to :article
   end
   

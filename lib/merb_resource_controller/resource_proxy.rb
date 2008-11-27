@@ -3,7 +3,7 @@ module Merb
     
     class ResourceProxy
       
-      attr_reader :resource, :parents, :actions, :registered_methods
+      attr_reader :resource, :parents, :registered_methods
       
       def initialize(resource, options = {})
         @resource, @singleton = load_resource(resource), !!options[:singleton]
@@ -14,9 +14,15 @@ module Merb
       end
       
       def action(name, options = {})
-        options = { :to => name.to_sym, :scope => :collection }.merge(options)
-        # raise_if_invalid_options!(options)
         @actions << { :name => name.to_sym }.merge(options)
+      end
+            
+      def actions(*names)
+        names.each { |n| @actions << n.is_a?(Hash) ? n : { :name => n.to_sym } }
+      end
+      
+      def registered_actions
+        @actions
       end
       
       # ----------------------------------------------------------------------------------------
@@ -216,7 +222,8 @@ module Merb
       end
       
       def register_default_actions!
-        [ :index, :show, :new, :edit, :create, :update, :destroy ].each do |a|
+        action :index unless @singleton
+        [ :show, :new, :edit, :create, :update, :destroy ].each do |a|
           action(a)
         end
       end

@@ -2,83 +2,82 @@ h2. merb_resource_controller
 
 A merb plugin that provides the default @CRUD@ actions for controllers and allows for easy customization
 of the generated actions. @merb_resource_controller@ only supports @datamapper@ so far. Implementing support
-for @active_record@ would be trivial, but i have no need for it.
-
-@merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
-will "adjust" its actions accordingly. It will also initialize all the instance variables
-you would expect for your chosen nesting strategy. This means for example, that when you have an URL like
-@/articles/1/comments@, you will have an @@article@ variable pointing to @Article.get(1)@ and a @@comments@ variable
-pointing to @Article.get(1).comments@. It will even be smart enough to give you @@article@ and @@editor@ if you have
-a singleton resource nested like @/articles/1/editor@. For details on how to declare singleton resources, have a
-look at the _Usage Examples_ section below.
+for @active_record@ would be trivial, but I have no need for it.
 
 Currently, @merb_resource_controller@ needs an extra specification inside the controller to define the nesting strategy
-to use. This shouldn't really be necessary, since this information could be easily provided by the @Merb::Router@.
-I'm planning to have a look into this soon! With that in place, resource_controllers could be _3 liners_ that just do
-what you would expect them to do, if you don't step off the beaten track :-) Still, if you decide to do so, it will try
-to get out of your way as much as possible. 
+to use. This shouldn't really be necessary, since this information could be provided by the @Merb::Router@.
+I'm planning to have a look into this soon! With that in place, nested resource_controllers could be _3 liners_ 
+that just do what you would expect them to do.
 
-h2. More Information
-
-Have a look at @Merb::ResourceController::Actions@, @Merb::ResourceController::Mixin::InstanceMethods@ and 
-@Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/actions.rb@ and 
-@lib/merb_resource_controller/resource_controller.rb@ to see what methods will be available inside your controllers.
-
-Alternatively you can continue reading this README and glance through the code listed under _Defined Actions_ 
-and _Additional Helper Methods_. Almost all of the available methods are used from inside the standard actions 
-that get included into your controller.
-
-Of course, you should also have a look at the specs, to get a more concrete idea of how @merb_resource_controller@
-behaves under the given circumstances.
-
-
-h2. Usage Examples
+To get you started with @merb_resource_controller@, all you have to do is extend it into your controller.
+Most probably you will want extend it into the @Application@ controller, which will make the @controlling@
+method available to all your application's controllers.
 
 <pre>
 <code>
 class Application < Merb::Controller
-  
-  # This will wrap all actions inside a dm repository block
-  # in order to be able to use DM's identitiy map feature.
-  # For more information on DM identity maps have a look at
-  # http://datamapper.org/doku.php?id=docs:identity_map
-  #
-  # Feel free to include this module into single controllers 
-  # instead of including it into Application controller, which
-  # enables identity maps for every controller action in your app.
-  
-  include Merb::ResourceController::DM::IdentityMapSupport
-  
-  
-  # This will give you the 'set_action_timeout' class method.
-  
-  extend Merb::ResourceController::ActionTimeout
-  
-  
-  # If you specify an action_timeout greater or equal to 1
-  # and you have the 'system_timer' gem installed, the action
-  # will timeout after the given amount of seconds.
-  #
-  # For a more detailed explanation on the topic have a look at
-  # http://adam.blog.heroku.com/past/2008/6/17/battling_wedged_mongrels_with_a/
-  #
-  # Feel free to set action timeouts for single controllers 
-  # instead of doing so in Application controller, which sets 
-  # the same action timeout for every controller action in your app.
-  
-  set_action_timeout 1
-  
-  
-  # This will give you the 'controlling' class method
-  
   extend Merb::ResourceController::Mixin::ClassMethods
-  
 end
+</code>
+</pre>
 
+And here is a quick example showing a controller for a standard toplevel resource with all standard @CRUD@ actions.
+
+<pre>
+<code>
 class Articles < Application
   controlling :articles
 end
+</code>
+</pre>
 
+If you don't want all standard @CRUD@ actions to be generated, give @merb_resource_controller@ the exact list
+of actions you want your controller to have.
+
+<pre>
+<code>
+class Articles < Application
+  controlling :articles do |a|
+    a.action :create
+    a.action :update
+  end
+end
+</code>
+</pre>
+
+Alternatively, you can also add more than one action at once using the @actions@ method available on the @ResourceProxy@
+
+<pre>
+<code>
+class Articles < Application
+  controlling :articles do |a|
+    a.actions :create, :update
+  end
+end
+</code>
+</pre>
+
+h2. Nested Resources
+
+@merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and
+will _adjust_ its actions accordingly. It will also initialize all the instance variables
+you would expect for your chosen nesting strategy. This means, that when you have an URL like
+@/articles/1/comments@, you will have an @@article@ variable pointing to @Article.get(1)@ and a @@comments@ variable
+pointing to @Article.get(1).comments@.
+
+It's important to note, that no database operations will be performed more than once!
+So in the case of @/articles/1/comments/1/ratings@, @merb_resource_controller@ will do exactly what you would
+expect it to do: It will issue @Article.get(1).comments.get(1).ratings@, initializing 
+@@article@, @@comment@ and @@ratings@ with the intermediate results on it's way down the association chain.
+
+Speaking of an _association chain_, it is worth mentioning that it is by no means necessary that your 
+underlying models are connected via _real datamapper associations_ (like @has n, ...@ or @belongs_to@). 
+The only requirement is, that the object returned from a call to the nested _collection_ @respond_to?(:get)@ 
+(in most cases it will be a @DataMapper::Collection@ anyway).
+
+
+<pre>
+</code>
 class Comments < Application
   controlling :comments do |c|
     c.belongs_to :article
@@ -90,39 +89,97 @@ class Ratings < Application
     r.belongs_to [ :article, :comment ]
   end
 end
+</code>
+</pre>
 
+h2. Nested Singleton Resources
+
+First of all, singleton resources (currently) must always be nested below at least one parent resource. 
+
+This is mostly because I somehow can't really imagine a usecase for a real toplevel singleton resource? I mean, there 
+must be  _some_ information on _how_ to load that _one_ resource. Since we're mostly dealing with database backends here,
+we should probably need some kind of _key_ to identify exactly _one_ dataset, but we don't get that _key_ from a resource 
+like  @/profile@ (_where_ is the @:id@ param here?). So my guess is, that most of the toplevel singleton resources that
+_are_ actually used, really are nested below some kind of resource that's stored in the @session@, most probably the
+authenticated @user@ object. If this is the case, it would be perfectly valid, to just _really nest_ those singletons 
+below their real parent, and probably add a route alias to keep up the disguise. If you can come up with a usecase
+where you have a real toplevel singleton resource that needs _no key_ to be loaded, just don't use
+@merb_resource_controller@. Really, it's that simple! If however, I'm completely on the wrong track here, I would be glad
+to be informed about it, so that I can fix things up.
+
+The example code below behaves almost exactly like described in the section on _Nested Resources_ above. The only
+two differences are, that 1) @no index action@ will be generated and that 2) the initialized instance variables will be
+named @@article@ and @@editor@ if you have a singleton resource nested like @/articles/1/editor@. Just like you would 
+expect, no? Additionally, you will probably want to override the redirection targets, since @merb_resource_controller@
+currently isn't smart enough to redirect to sensible defaults. I will work on that, though.
+
+<pre>
+<code>
 class Editors < Application
-  
-  controlling(:editors, :singleton => true) do |e|
+
+  controlling :editor, :singleton => true do |e|
     e.belongs_to :article
   end
-  
+
   def redirect_on_successful_create
     resource(parent, :editor)
   end
-    
+
   def redirect_on_successful_update
     resource(parent, :editor)
   end
-      
+
   def redirect_on_successful_destroy
     resource(parent)
   end
-  
+
+end
+</code>
+</pre>
+
+h2. DataMapper's Identity Map
+
+Including @Merb::ResourceController::DM::IdentityMapSupport@ into any of your controller will wrap all actions 
+inside a dm repository block in order to be able to use DM's identitiy map feature. For more information on that topic,
+have a look at "DataMapper's Identity Map":http://datamapper.org/doku.php?id=docs:identity_map
+
+Feel free to include this module into _single_ controllers instead of including it into @Application@ controller, which
+enables identity maps for _every_ controller action in your app.
+
+<pre>
+<code>
+class Application < Merb::Controller  
+  include Merb::ResourceController::DM::IdentityMapSupport
+end
+</code>
+</pre>
+
+h2. Action Timeouts
+
+Extending @Merb::ResourceController::ActionTimeout@  into any of your controllers, will give you the @set_action_timeout@
+method. If you specify an action_timeout greater or equal to @1@ and you have the @system_timer@ gem installed, the 
+action will timeout after the given amount of seconds. For a more detailed explanation on the topic have a look at
+"Battling Wedged Mongrels with a Request Timeout":http://adam.blog.heroku.com/past/2008/6/17/battling_wedged_mongrels_with_a/
+
+Feel free to set action timeouts for _single_ controllers instead of doing so in @Application@ controller, which sets 
+the same action timeout for _every_ controller action in your app.
+
+<pre>
+<code>
+class Application < Merb::Controller
+  extend Merb::ResourceController::ActionTimeout  
+  set_action_timeout 1
 end
 </code>
 </pre>
 
 h2. Defined Actions
 
+All the above controllers will have the following actions defined. Feel free to override them, to customize 
+how the controllers behave. Of course you are also free to override all the methods used by these defined actions.
+
 <pre>
-<code>
-# The above controllers will all have the following
-# actions defined. Feel free to override them, to
-# customize how the controllers behave. Of course
-# you are also free to override all the methods used
-# by these defined actions
-  
+<code>  
 def index
   load_resource
   display requested_resource
@@ -187,12 +244,11 @@ end
 
 h2. Additional Helper Methods
 
+In addition to the actions and the methods they are using, you will probably want to override the redirection targets
+These are the methods you can override to this effect:
+
 <pre>
 <code>
-# In addition to the actions and the methods they are using,
-# you will probably want to override the redirection targets
-# These are the methods you can override to this effect
-
 def redirect_on_successful_create
   resource(*(has_parent? ? [ *parents ] + [ member ] : [ member ]))
 end
@@ -207,8 +263,20 @@ end
 </code>
 </pre>
 
+h2. More Information
+
+Have a look at @Merb::ResourceController::Actions@, @Merb::ResourceController::Mixin::InstanceMethods@ and 
+@Merb::ResourceController::Mixin::FlashSupport@ inside @lib/merb_resource_controller/actions.rb@ and 
+@lib/merb_resource_controller/resource_controller.rb@ to see what methods will be available inside your controllers.
+If you want to see where the _real work gets done_, have a look at @lib/merb_resource_controller/resource_proxy.rb@
+
+Of course, you should also have a look at the specs, to get a more concrete idea of how @merb_resource_controller@
+behaves under the given circumstances.
+
 h2. TODO
 
+# Reasonable redirection targets for singleton resources
+# Infer route nesting strategy from @Merb::Router@
 # Customizable support for @provides@ and @only_provides@
 # Support for user stamps (aka created_by and updated_by)
 # Support for pagination once an _official_ merb pagination solution exists

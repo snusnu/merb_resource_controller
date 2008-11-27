@@ -16,7 +16,7 @@ module Merb
           class_inheritable_reader :resource_proxy
           include InstanceMethods
           include FlashSupport if options[:flash]
-          @resource_proxy.actions.each do |a|
+          @resource_proxy.registered_actions.each do |a|
             include Merb::ResourceController::Actions.const_get("#{a[:name].to_s.camel_case}")
             show_action(a[:name])
           end

@@ -42,7 +42,7 @@ describe Merb::ResourceController::ResourceProxy do
     
     it "should have the default actions registered" do
       default_actions = [ :index, :show, :new, :edit, :create, :update, :destroy ]
-      actions = @p.actions.map { |h| h[:name] }
+      actions = @p.registered_actions.map { |h| h[:name] }
       
       actions.size.should == default_actions.size
       actions.all? { |a| default_actions.include?(a) }.should be_true
