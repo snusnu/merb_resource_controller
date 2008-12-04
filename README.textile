@@ -142,8 +142,7 @@ to be informed about it, so that I can fix things up.
 The example code below behaves almost exactly like described in the section on _Nested Resources_ above. The only
 two differences are, that 1) @no index action@ will be generated and that 2) the initialized instance variables will be
 named @@article@ and @@editor@ if you have a singleton resource nested like @/articles/1/editor@. Just like you would 
-expect, no? Additionally, you will probably want to override the redirection targets, since @merb_resource_controller@
-currently isn't smart enough to redirect to sensible defaults. I will work on that, though.
+expect, no?
 
 <pre>
 <code>
@@ -151,18 +150,6 @@ class Editors < Application
 
   controlling :editor, :singleton => true do |e|
     e.belongs_to :article
-  end
-
-  def redirect_on_successful_create
-    resource(parent, :editor)
-  end
-
-  def redirect_on_successful_update
-    resource(parent, :editor)
-  end
-
-  def redirect_on_successful_destroy
-    resource(parent)
   end
 
 end
@@ -277,20 +264,26 @@ end
 h2. Additional Helper Methods
 
 In addition to the actions and the methods they are using, you will probably want to override the redirection targets
-These are the methods you can override to this effect:
+These are the default method implementations you can override to this effect:
 
 <pre>
 <code>
 def redirect_on_successful_create
-  resource(*(has_parent? ? parents + [ member ] : [ member ]))
+  target = singleton_controller? ? member_name : member
+  resource(*(has_parent? ? parents + [ target ] : [ target ]))
 end
 
 def redirect_on_successful_update
-  resource(*(has_parent? ? parents + [ member ] : [ member ]))
+  target = singleton_controller? ? member_name : member
+  resource(*(has_parent? ? parents + [ target ] : [ target ]))
 end
 
 def redirect_on_successful_destroy
-  resource(*(has_parent? ? parents + [ collection_name ] : [ collection_name ]))
+  if singleton_controller?
+    has_parent? ? resource(parent) : '/'
+  else
+    resource(*(has_parent? ? parents + [ collection_name ] : [ collection_name ]))
+  end
 end
 </code>
 </pre>
@@ -307,7 +300,6 @@ behaves under the given circumstances.
 
 h2. TODO
 
-# Reasonable redirection targets for singleton resources
 # Infer route nesting strategy from @Merb::Router@
 # Customizable support for @provides@ and @only_provides@
 # Support for user stamps (aka created_by and updated_by)

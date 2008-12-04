@@ -82,6 +82,10 @@ module Merb
         @fully_qualified
       end
       
+      def singleton_resource?
+        @singleton
+      end
+      
       
       def path_to_resource(params)
         nesting_strategy_instance(nesting_strategy_template(params)).map do |i|

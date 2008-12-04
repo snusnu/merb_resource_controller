@@ -1,7 +1,6 @@
 TODO
 ====
 
-# Reasonable redirection targets for singleton resources
 # Infer route nesting strategy from @Merb::Router@
 # Customizable support for @provides@ and @only_provides@
 # Support for user stamps (aka created_by and updated_by)

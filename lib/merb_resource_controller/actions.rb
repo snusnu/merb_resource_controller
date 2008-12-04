@@ -93,7 +93,8 @@ module Merb
         end
         
         def redirect_on_successful_create
-          resource(*(has_parent? ? parents + [ member ] : [ member ]))
+          target = singleton_controller? ? member_name : member
+          resource(*(has_parent? ? parents + [ target ] : [ target ]))
         end
         
       end
@@ -123,7 +124,8 @@ module Merb
         end
         
         def redirect_on_successful_update
-          resource(*(has_parent? ? parents + [ member ] : [ member ]))
+          target = singleton_controller? ? member_name : member
+          resource(*(has_parent? ? parents + [ target ] : [ target ]))
         end
         
       end
@@ -152,7 +154,11 @@ module Merb
         end
         
         def redirect_on_successful_destroy
-          resource(*(has_parent? ? parents + [ collection_name ] : [ collection_name ]))
+          if singleton_controller?
+            has_parent? ? resource(parent) : '/'
+          else
+            resource(*(has_parent? ? parents + [ collection_name ] : [ collection_name ]))
+          end
         end
         
       end

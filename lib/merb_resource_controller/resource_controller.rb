@@ -38,6 +38,10 @@ module Merb
         end
         
         
+        def singleton_controller?
+          resource_proxy.singleton_resource?
+        end
+        
         def has_parent?
           resource_proxy.has_parent? && has_parent_param?
         end
