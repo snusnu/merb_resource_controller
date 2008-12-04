@@ -10,6 +10,6 @@ class Article
   
   belongs_to :editor
   
-  has n, :comments
+  has n, :comments, :class_name => "Community::Comment"
   
 end

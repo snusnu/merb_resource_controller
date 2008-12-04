@@ -29,14 +29,14 @@ Merb.logger.info("Compiling routes...")
 Merb::Router.prepare do
   
   resources :articles do
-    resources :comments do
+    resources :comments, Community::Comment, :controller => "community/comments" do
       resources :ratings, Community::Rating, :controller => "community/ratings"
     end
     resource :editor
   end
   
-  resources :comments do
-    resources :ratings
+  resources :comments, Community::Comment, :controller => "community/comments" do
+    resources :ratings, Community::Rating, :controller => "community/ratings"
   end
 
   # This is the default route for /:controller/:action/:id

@@ -3,9 +3,20 @@ module Merb
     
     class ResourceProxy
       
+      DEFAULT_NESTING_OPTIONS = {
+        :singleton => false, 
+        :fully_qualified => false
+      }
+            
+      DEFAULT_OPTIONS = DEFAULT_NESTING_OPTIONS.merge({
+        :defaults => true,
+        :use => :all
+      })
+      
       attr_reader :resource, :parents, :registered_methods
       
       def initialize(resource, options = {})
+        options = DEFAULT_OPTIONS.merge(options)
         @resource, @singleton = load_resource(resource), !!options[:singleton]
         @fully_qualified = !!options[:fully_qualified]
         @actions, @registered_methods, @parents = [], [], []
@@ -41,28 +52,28 @@ module Merb
       
       def belongs_to(parent, options = {})
         case parent
-        when Symbol then
-          options = { :key => Extlib::Inflection.foreign_key(parent), :singleton => false }.merge(options)
+        when Symbol, String then
+          options = DEFAULT_NESTING_OPTIONS.merge(:key => key_name(parent)).merge(options)
           @parents << { :name => parent, :class => load_resource(parent) }.merge(options)
         when Array  then
           parent.each do |p|
             case p
-            when Symbol then
-              options = { :key => Extlib::Inflection.foreign_key(p), :singleton => false }
+            when Symbol, String then
+              options = DEFAULT_NESTING_OPTIONS.merge(:key => key_name(p))
               @parents << { :name => p, :class => load_resource(p) }.merge(options)
             when Array  then
-              if p[0].is_a?(Symbol) && p[1].is_a?(Hash)
-                options = { :key => Extlib::Inflection.foreign_key(p[0]), :singleton => false }.merge(p[1])
+              if (p[0].is_a?(Symbol) || p[0].is_a?(String)) && p[1].is_a?(Hash)
+                options = DEFAULT_NESTING_OPTIONS.merge(:key => key_name(p[0])).merge(p[1])
                 @parents << { :name => p[0], :class => load_resource(p[0]) }.merge(options)
               else
-                raise ArgumentError, "use [ Symbol, Hash ] to denote one of multiple parents"
+                raise ArgumentError, "use [ Symbol|String, Hash ] to denote one of multiple parents"
               end
             else
-              raise ArgumentError, "parent must be Symbol or Array but was #{p.class}"
+              raise ArgumentError, "parent must be Symbol, String or Array but was #{p.class}"
             end
           end
         else
-          raise ArgumentError, "parent must be Symbol or Array but was #{parent.class}"
+          raise ArgumentError, "parent must be Symbol, String or Array but was #{parent.class}"
         end
       end
       
@@ -89,18 +100,18 @@ module Merb
       
       def path_to_resource(params)
         nesting_strategy_instance(nesting_strategy_template(params)).map do |i|
-          [ i[2] ? member_name(i[0]) : i[1] ? member_name(i[0]) : collection_name(i[0]), i[3] ]
+          [ i[3] ? member_name(i[0], i[2]) : i[1] ? member_name(i[0], i[2]) : collection_name(i[0], i[2]), i[4] ]
         end
       end
 
       def nesting_strategy_instance(nst, idx = 0)
         if nst[idx]
           if idx == 0
-            if nst[idx][2]
+            if nst[idx][3]
               if nst[idx][1]
                 raise "Toplevel singleton resources are not supported"
               else
-                nst[idx] = nst[idx] + [ nst[idx][0].get(nst[idx][2]), nra(nst[idx][0], nst) ]
+                nst[idx] = nst[idx] + [ nst[idx][0].get(nst[idx][3]), nra(nst[idx][0], nst) ]
                 nesting_strategy_instance(nst, idx + 1)
               end
             else
@@ -108,16 +119,16 @@ module Merb
               nesting_strategy_instance(nst, idx + 1)
             end
           else
-            if nst[idx][2]
+            if nst[idx][3]
               if nst[idx][1]
-                nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]), nra(nst[idx][0], nst) ]
+                nst[idx] = nst[idx] + [ nst[idx - 1][4].send(nst[idx - 1][5]), nra(nst[idx][0], nst) ]
                 nesting_strategy_instance(nst, idx + 1)
               else
-                nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]).get(nst[idx][2]), nra(nst[idx][0], nst) ]
+                nst[idx] = nst[idx] + [ nst[idx - 1][4].send(nst[idx - 1][5]).get(nst[idx][3]), nra(nst[idx][0], nst) ]
                 nesting_strategy_instance(nst, idx + 1)
               end
             else
-              nst[idx] = nst[idx] + [ nst[idx - 1][3].send(nst[idx - 1][4]), nra(nst[idx][0], nst) ]
+              nst[idx] = nst[idx] + [ nst[idx - 1][4].send(nst[idx - 1][5]), nra(nst[idx][0], nst) ]
               nesting_strategy_instance(nst, idx + 1)
             end
           end
@@ -131,8 +142,12 @@ module Merb
         member = member.is_a?(Class) ? member : member.class
         return nil unless idx = nst.map { |el| el[0] }.index(member)
         if child = nst[idx + 1]
-          model, singleton, id = child[0], child[1], child[2]
-          id ? collection_name(model) : singleton ? member_name(model) : collection_name(model)
+          model, singleton, fully_qualified, id = child[0], child[1], child[2], child[3]
+          if id
+            collection_name(model, fully_qualified)
+          else
+            singleton ? member_name(model, fully_qualified) : collection_name(model, fully_qualified)
+          end
         else
           nil
         end
@@ -151,7 +166,7 @@ module Merb
       end
       
       def nesting_strategy
-        parent_resources << [ @resource, @singleton ]
+        parent_resources << [ @resource, @singleton, fully_qualified? ]
       end
       
       def nesting_level
@@ -172,7 +187,7 @@ module Merb
       
       # all parent resources
       def parent_resources
-        @parents.map { |h| [ h[:class], h[:singleton] ] }
+        @parents.map { |h| [ h[:class], h[:singleton], h[:fully_qualified] ] }
       end
       
       # the immediate parent resource
@@ -192,16 +207,20 @@ module Merb
       end
       
       
-      def collection_name(resource = nil)
-        if fully_qualified?
+      def collection_name(resource = nil, fully_qualified = false)
+        if fully_qualified
           Extlib::Inflection.tableize((resource || @resource).name).to_sym
         else  
           Extlib::Inflection.demodulize((resource || @resource).name).pluralize.snake_case.to_sym
         end
       end
       
-      def member_name(resource = nil)
-        collection_name(resource).to_s.singularize.to_sym
+      def member_name(resource = nil, fully_qualified = false)
+        collection_name(resource, fully_qualified).to_s.singularize.to_sym
+      end
+      
+      def key_name(resource = nil)
+        Extlib::Inflection.foreign_key(resource || @resource)
       end
       
       

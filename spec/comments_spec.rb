@@ -10,7 +10,7 @@ given "an Article exists" do
 end
 
 given "a Comment exists" do
-  Comment.all.destroy!
+  Community::Comment.all.destroy!
   Article.all.destroy!
   request(
     resource(:articles), 
@@ -41,7 +41,7 @@ describe "resource(:comments)" do
   describe "a successful POST", :given => "an Article exists" do
     
     before(:each) do
-      Comment.all.destroy!
+      Community::Comment.all.destroy!
       @response = request(resource(:comments), 
         :method => "POST", 
         :params => { :comment => { :id => nil, :article_id => Article.first, :body => "yeah" }}
@@ -49,7 +49,7 @@ describe "resource(:comments)" do
     end
     
     it "should redirect to resource(@comment)" do
-      @response.should redirect_to(resource(Comment.first), :message => {:notice => "Comment was successfully created"})
+      @response.should redirect_to(resource(Community::Comment.first), :message => {:notice => "Comment was successfully created"})
     end
     
   end
@@ -61,7 +61,7 @@ describe "resource(@comment)" do
   describe "a successful DELETE", :given => "a Comment exists" do
     
      before(:each) do
-       @response = request(resource(Comment.first), :method => "DELETE")
+       @response = request(resource(Community::Comment.first), :method => "DELETE")
      end
 
      it "should redirect to resource(:comments)" do
@@ -93,7 +93,7 @@ describe "resource(@comment, :edit)", :given => "a Comment exists" do
   describe "PUT" do
   
     before(:each) do
-      @response = request(resource(Comment.first, :edit))
+      @response = request(resource(Community::Comment.first, :edit))
     end
   
     it "should respond successfully" do
@@ -109,7 +109,7 @@ describe "resource(@comment)", :given => "a Comment exists" do
   describe "GET" do
     
     before(:each) do
-      @response = request(resource(Comment.first))
+      @response = request(resource(Community::Comment.first))
     end
   
     it "should respond successfully" do
@@ -121,7 +121,7 @@ describe "resource(@comment)", :given => "a Comment exists" do
   describe "PUT" do
     
     before(:each) do
-      @comment = Comment.first
+      @comment = Community::Comment.first
       @response = request(resource(@comment), :method => "PUT", 
         :params => { :comment => {:id => @comment.id, :body => "changed" } })
     end

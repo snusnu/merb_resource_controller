@@ -86,7 +86,7 @@ describe Merb::ResourceController::ResourceProxy do
     it "should raise NameError when it should belong to an invalid parent resource" do
       options = { :defaults => true, :flash => true, :use => :all }
       lambda {
-        p = Merb::ResourceController::ResourceProxy.new(:comments, options)
+        p = Merb::ResourceController::ResourceProxy.new("Community::Comment", options)
         p.belongs_to :foo
       }.should raise_error(NameError)
     end
@@ -123,7 +123,7 @@ describe Merb::ResourceController::ResourceProxy do
     
     
     it "should return an array with one member for nesting strategy" do
-      @p.nesting_strategy.should == [ [Article, false] ]
+      @p.nesting_strategy.should == [ [Article, false, false] ]
     end
 
     it "should know its nesting_level" do
@@ -132,12 +132,12 @@ describe Merb::ResourceController::ResourceProxy do
 
     it "should be able to build a nesting strategy template for a collection route" do
       params = {}
-      @p.nesting_strategy_template(params).should == [ [Article, false, nil] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, nil] ]
     end
     
     it "should be able to build a nesting strategy template for a member route" do
       params = { "id" => 1}
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, 1] ]
     end
     
   end
@@ -147,7 +147,7 @@ describe Merb::ResourceController::ResourceProxy do
     
     before(:each) do
       options = { :defaults => true, :flash => true, :use => :all }
-      @p = Merb::ResourceController::ResourceProxy.new(:comments, options)
+      @p = Merb::ResourceController::ResourceProxy.new("Community::Comment", options)
       @p.belongs_to :article
     end
     
@@ -159,11 +159,11 @@ describe Merb::ResourceController::ResourceProxy do
     end
         
     it "should be able to load all parent resources" do
-      @p.parent_resources.should == [ [Article, false] ]
+      @p.parent_resources.should == [ [Article, false, false] ]
     end
             
     it "should be able to load a single parent resource" do
-      @p.parent_resource.should == [ Article, false ]
+      @p.parent_resource.should == [ Article, false, false ]
     end
     
                 
@@ -178,7 +178,7 @@ describe Merb::ResourceController::ResourceProxy do
     
     
     it "should be able to build a nesting strategy" do
-      @p.nesting_strategy.should == [ [Article, false], [Comment, false] ]
+      @p.nesting_strategy.should == [ [Article, false, false], [Community::Comment, false, false] ]
     end
 
     it "should know its nesting_level" do
@@ -187,12 +187,12 @@ describe Merb::ResourceController::ResourceProxy do
 
     it "should be able to build a nesting strategy template for a collection route" do
       params = { "article_id" => 1 }
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, nil] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, 1], [Community::Comment, false, false, nil] ]
     end
     
     it "should be able to build a nesting strategy template for a member route" do
       params = { "article_id" => 1, "id" => 1}
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, 1], [Community::Comment, false, false, 1] ]
     end
     
   end
@@ -202,7 +202,7 @@ describe Merb::ResourceController::ResourceProxy do
     before(:each) do
       options = { :defaults => true, :flash => true, :use => :all }
       @p = Merb::ResourceController::ResourceProxy.new("Community::Rating", options)
-      @p.belongs_to [ :article, :comment ]
+      @p.belongs_to [ :article, "Community::Comment" ]
     end
     
     it_should_behave_like "every nested resource"
@@ -210,15 +210,15 @@ describe Merb::ResourceController::ResourceProxy do
     
     it "should know that it belongs_to? all of its parent resources" do
       @p.belongs_to?(:article).should be_true
-      @p.belongs_to?(:comment).should be_true
+      @p.belongs_to?("Community::Comment").should be_true
     end
     
     it "should be able to load the immediate parent resource" do
-      @p.parent_resource.should == [ Comment, false ]
+      @p.parent_resource.should == [ Community::Comment, false, false ]
     end
      
     it "should be able to load all parent resources" do
-      @p.parent_resources.should == [ [Article, false], [Comment, false] ]
+      @p.parent_resources.should == [ [Article, false, false], [Community::Comment, false, false] ]
     end
     
     it "should be able to return all parent resource param keys" do
@@ -240,21 +240,21 @@ describe Merb::ResourceController::ResourceProxy do
     end
          
     it "should be able to build a nesting strategy" do
-      @p.nesting_strategy.should == [ [Article, false], [Comment, false], [Community::Rating, false] ]
+      @p.nesting_strategy.should == [ [Article, false, false], [Community::Comment, false, false], [Community::Rating, false, false] ]
     end
     
     
     it "should be able to build a nesting strategy template for a collection route" do
       params = { "article_id" => 1, "comment_id" => 1 }
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Community::Rating, false, nil] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, 1], [Community::Comment, false, false, 1], [Community::Rating, false, false, nil] ]
     end
     
     it "should be able to build a nesting strategy instance for a collection route" do
       Article.all.destroy!
-      Comment.all.destroy!
+      Community::Comment.all.destroy!
       Community::Rating.all.destroy!
       a = Article.create(:id => 1, :title => "title", :body => "body")
-      c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      c = Community::Comment.create(:id => 1, :article_id => 1, :body => "say what")
       r = Community::Rating.create(:id => 1, :comment_id => 1, :rate => 1)
       
       params = { "article_id" => 1, "comment_id" => 1 }
@@ -264,15 +264,15 @@ describe Merb::ResourceController::ResourceProxy do
              
     it "should be able to build a nesting strategy template for a member route" do
       params = { "article_id" => 1, "comment_id" => 1, "id" => 1 }
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Community::Rating, false, 1] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, false, 1], [Community::Comment, false, false, 1], [Community::Rating, false, false, 1] ]
     end
                  
     it "should be able to build a nesting strategy instance for a member route" do
       Article.all.destroy!
-      Comment.all.destroy!
+      Community::Comment.all.destroy!
       Community::Rating.all.destroy!
       a = Article.create(:id => 1, :title => "title", :body => "body")
-      c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
+      c = Community::Comment.create(:id => 1, :article_id => 1, :body => "say what")
       r = Community::Rating.create(:id => 1, :comment_id => 1, :rate => 1)
       
       params = { "article_id" => 1, "comment_id" => 1, "id" => 1}

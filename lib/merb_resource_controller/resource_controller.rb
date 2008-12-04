@@ -10,12 +10,7 @@ module Merb
       module ClassMethods
         
         def controlling(name, options = {})
-          options = { 
-            :defaults => true, 
-            :flash => true, 
-            :use => :all, 
-            :fully_qualified => false 
-          }.merge!(options)
+          options = { :flash => true }.merge!(options)
           @resource_proxy = Merb::ResourceController::ResourceProxy.new(name, options)
           yield @resource_proxy if block_given?
           class_inheritable_reader :resource_proxy

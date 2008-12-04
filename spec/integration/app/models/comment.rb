@@ -1,12 +1,16 @@
-class Comment
+module Community
+
+  class Comment
   
-  include DataMapper::Resource
+    include DataMapper::Resource
   
-  property :id,         Serial
-  property :article_id, Integer
-  property :body,       String
+    property :id,         Serial
+    property :article_id, Integer
+    property :body,       String
   
-  belongs_to :article
-  has n, :ratings, :class_name => "Community::Rating"
+    belongs_to :article
+    has n, :ratings, :class_name => "Community::Rating"
   
+  end
+
 end
