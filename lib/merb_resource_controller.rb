@@ -10,15 +10,15 @@ if defined?(Merb::Plugins)
   
   Merb::BootLoader.before_app_loads do
     # require code that must be loaded before the application
-    MRC = File.join(File.dirname(__FILE__), 'merb_resource_controller')
-    require MRC / 'resource_proxy'
-    require MRC / 'actions'
-    require MRC / 'resource_controller'
+    mrc = File.join(File.dirname(__FILE__), 'merb_resource_controller')
+    require mrc / 'resource_proxy'
+    require mrc / 'actions'
+    require mrc / 'resource_controller'
     if Merb::Plugins.config[:merb_resource_controller][:identity_map]
-      require MRC / 'identity_map_support'
+      require mrc / 'identity_map_support'
     end
     if Merb::Plugins.config[:merb_resource_controller][:action_timeout]
-      require MRC / 'action_timeout_support'
+      require mrc / 'action_timeout_support'
     end
   end
   

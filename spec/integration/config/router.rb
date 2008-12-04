@@ -30,7 +30,7 @@ Merb::Router.prepare do
   
   resources :articles do
     resources :comments do
-      resources :ratings
+      resources :ratings, Community::Rating, :controller => "community/ratings"
     end
     resource :editor
   end

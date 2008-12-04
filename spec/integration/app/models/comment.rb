@@ -7,6 +7,6 @@ class Comment
   property :body,       String
   
   belongs_to :article
-  has n, :ratings
+  has n, :ratings, :class_name => "Community::Rating"
   
 end

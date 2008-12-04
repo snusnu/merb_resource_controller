@@ -1,7 +1,7 @@
 # Go to http://wiki.merbivore.com/pages/init-rb
- 
+
 require File.dirname(__FILE__) / 'dependencies'
- 
+
 use_orm :datamapper
 use_test :rspec
 use_template_engine :erb
@@ -17,6 +17,7 @@ end
  
 Merb::BootLoader.before_app_loads do
   # This will get executed after dependencies have been loaded but before your app's classes have loaded.
+  require Merb.root / '..' / '..' / 'lib' /'merb_resource_controller'
 end
  
 Merb::BootLoader.after_app_loads do

@@ -2,6 +2,16 @@ require File.dirname(__FILE__) + '/spec_helper'
 
 describe Merb::ResourceController::ResourceProxy do
   
+  describe "every ResourceProxy", :shared => true do
+    
+    it "should be able to load not namespaced models" do
+      @p.send(:load_resource, Article).should  == Article
+      @p.send(:load_resource, :articles).should == Article
+      @p.send(:load_resource, "Article").should == Article
+    end
+    
+  end
+  
   describe "every nested resource", :shared => true do
     
     it "should know that it has parent resource" do
@@ -25,6 +35,7 @@ describe Merb::ResourceController::ResourceProxy do
       @p = Merb::ResourceController::ResourceProxy.new(:articles, options)
     end
     
+    it_should_behave_like "every ResourceProxy"
     it_should_behave_like "every toplevel resource"
     
 
@@ -33,11 +44,11 @@ describe Merb::ResourceController::ResourceProxy do
     end
     
     it "should be able to infer the collection_name for the resource it proxies" do
-      @p.collection_name.should == "articles"
+      @p.collection_name.should == :articles
     end
         
     it "should be able to infer the member_name for the resource it proxies" do
-      @p.member_name.should == "article"
+      @p.member_name.should == :article
     end
     
     it "should have the default actions registered" do
@@ -190,7 +201,7 @@ describe Merb::ResourceController::ResourceProxy do
     
     before(:each) do
       options = { :defaults => true, :flash => true, :use => :all }
-      @p = Merb::ResourceController::ResourceProxy.new(:ratings, options)
+      @p = Merb::ResourceController::ResourceProxy.new("Community::Rating", options)
       @p.belongs_to [ :article, :comment ]
     end
     
@@ -229,22 +240,22 @@ describe Merb::ResourceController::ResourceProxy do
     end
          
     it "should be able to build a nesting strategy" do
-      @p.nesting_strategy.should == [ [Article, false], [Comment, false], [Rating, false] ]
+      @p.nesting_strategy.should == [ [Article, false], [Comment, false], [Community::Rating, false] ]
     end
     
     
     it "should be able to build a nesting strategy template for a collection route" do
       params = { "article_id" => 1, "comment_id" => 1 }
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Rating, false, nil] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Community::Rating, false, nil] ]
     end
     
     it "should be able to build a nesting strategy instance for a collection route" do
       Article.all.destroy!
       Comment.all.destroy!
-      Rating.all.destroy!
+      Community::Rating.all.destroy!
       a = Article.create(:id => 1, :title => "title", :body => "body")
       c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
-      r = Rating.create(:id => 1, :comment_id => 1, :rate => 1)
+      r = Community::Rating.create(:id => 1, :comment_id => 1, :rate => 1)
       
       params = { "article_id" => 1, "comment_id" => 1 }
       @p.path_to_resource(params).should == [ [:article,a], [:comment,c], [:ratings, [r]] ]
@@ -253,16 +264,16 @@ describe Merb::ResourceController::ResourceProxy do
              
     it "should be able to build a nesting strategy template for a member route" do
       params = { "article_id" => 1, "comment_id" => 1, "id" => 1 }
-      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Rating, false, 1] ]
+      @p.nesting_strategy_template(params).should == [ [Article, false, 1], [Comment, false, 1], [Community::Rating, false, 1] ]
     end
                  
     it "should be able to build a nesting strategy instance for a member route" do
       Article.all.destroy!
       Comment.all.destroy!
-      Rating.all.destroy!
+      Community::Rating.all.destroy!
       a = Article.create(:id => 1, :title => "title", :body => "body")
       c = Comment.create(:id => 1, :article_id => 1, :body => "say what")
-      r = Rating.create(:id => 1, :comment_id => 1, :rate => 1)
+      r = Community::Rating.create(:id => 1, :comment_id => 1, :rate => 1)
       
       params = { "article_id" => 1, "comment_id" => 1, "id" => 1}
       @p.path_to_resource(params).should == [ [:article,a], [:comment,c], [:rating, r] ]

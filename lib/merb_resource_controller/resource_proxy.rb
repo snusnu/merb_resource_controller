@@ -7,6 +7,7 @@ module Merb
       
       def initialize(resource, options = {})
         @resource, @singleton = load_resource(resource), !!options[:singleton]
+        @fully_qualified = !!options[:fully_qualified]
         @actions, @registered_methods, @parents = [], [], []
         @specific_methods_registered = options[:use] != :all
         register_default_actions! if options[:defaults]
@@ -77,14 +78,14 @@ module Merb
         @parents.size > 1
       end
       
+      def fully_qualified?
+        @fully_qualified
+      end
+      
       
       def path_to_resource(params)
-        nesting_strategy_instance(nesting_strategy_template(params)).map do |el|
-          [ if el[2]
-            el[0].name.snake_case.to_sym
-          else
-            el[1] ? el[0].name.snake_case.to_sym : Extlib::Inflection.tableize(el[0].name).to_sym
-          end, el[3] ]
+        nesting_strategy_instance(nesting_strategy_template(params)).map do |i|
+          [ i[2] ? member_name(i[0]) : i[1] ? member_name(i[0]) : collection_name(i[0]), i[3] ]
         end
       end
 
@@ -127,11 +128,7 @@ module Merb
         return nil unless idx = nst.map { |el| el[0] }.index(member)
         if child = nst[idx + 1]
           model, singleton, id = child[0], child[1], child[2]
-          if id
-            Extlib::Inflection.tableize(model.name).to_sym
-          else
-            singleton ? model.name.snake_case.to_sym : Extlib::Inflection.tableize(model.name).to_sym
-          end
+          id ? collection_name(model) : singleton ? member_name(model) : collection_name(model)
         else
           nil
         end
@@ -192,11 +189,15 @@ module Merb
       
       
       def collection_name(resource = nil)
-        (resource || @resource).name.snake_case.pluralize
+        if fully_qualified?
+          Extlib::Inflection.tableize((resource || @resource).name).to_sym
+        else  
+          Extlib::Inflection.demodulize((resource || @resource).name).pluralize.snake_case.to_sym
+        end
       end
       
       def member_name(resource = nil)
-        (resource || @resource).name.snake_case
+        collection_name(resource).to_s.singularize.to_sym
       end
       
       
@@ -217,8 +218,17 @@ module Merb
       
       private
       
-      def load_resource(resource)
-        Extlib::Inflection.constantize(Extlib::Inflection.classify(resource))
+      def load_resource(r)
+        case r
+        when Symbol
+          Module.find_const(r.to_s.singular.camel_case)
+        when String
+          Module.find_const(r.include?('::') ? r : r.singular.camel_case)
+        when Class
+          r
+        else
+          raise "resource must be either a Symbol, a String or a Class"
+        end
       end
       
       def register_default_actions!

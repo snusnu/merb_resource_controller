@@ -57,6 +57,38 @@ end
 </code>
 </pre>
 
+
+If you are using models that are nested inside some @module@ (maybe you're developing a @slice@ ?), you need to 
+provide the fully qualified class name to the @controlling@ method. Per default, @merb_resource_controller@ assumes 
+that you don't want to use the fully qualified name to generate your instance variables and association calls.
+
+<pre>
+<code>
+class Ratings < Application
+  controlling "Community::Rating"
+end
+</code>
+</pre>
+
+This will initialize the instance variable @@ratings@ (or @@rating@ respectively). If this resource is nested below 
+another resource (see next section), this also means that the @:ratings@ (or @:rating@ respectively) association will
+be used to navigate from the parent resource down to this resource.
+
+If however, you want to use fully qualified names for your instance variables and association calls, you can explicitly
+pass @:fully_qualified => true@ to the @controlling@ method (@false@ is the default).
+
+<pre>
+<code>
+class Ratings < Application
+  controlling "Community::Rating", :fully_qualified => true
+end
+</code>
+</pre>
+
+This will initialize the instance variable @@community_ratings@ (or @@community_rating@ respectively). If this resource
+is nested below another resource (see next section), this also means that the @:community_ratings@ (or 
+@:community_rating@ respectively) association will be used to navigate from the parent resource down to this resource.
+
 h2. Nested Resources
 
 @merb_resource_controller@ will automatically recognize if it is accessed from a toplevel or a nested url, and

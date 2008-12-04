@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 given "a Comment exists" do
-  Rating.all.destroy!
+  Community::Rating.all.destroy!
   Comment.all.destroy!
   Article.all.destroy!
   request(
@@ -17,7 +17,7 @@ given "a Comment exists" do
 end
 
 given "a Rating exists" do
-  Rating.all.destroy!
+  Community::Rating.all.destroy!
   Comment.all.destroy!
   Article.all.destroy!
   request(
@@ -55,7 +55,7 @@ describe "resource(@article, @comment, :ratings)" do
   describe "a successful POST", :given => "a Comment exists" do
     
     before(:each) do
-      Rating.all.destroy!
+      Community::Rating.all.destroy!
       @response = request(resource(Article.first, Comment.first, :ratings), 
         :method => "POST", 
         :params => { :rating => { :id => nil, :comment_id => Comment.first.id, :rate => 1 }}
@@ -64,7 +64,7 @@ describe "resource(@article, @comment, :ratings)" do
     
     it "should redirect to resource(@article, @comment, @rating)" do
       @response.should redirect_to(
-        resource(Article.first, Comment.first, Rating.first), 
+        resource(Article.first, Comment.first, Community::Rating.first), 
         :message => {:notice => "Rating was successfully created"}
       )
     end
@@ -78,7 +78,7 @@ describe "resource(@article, @comment, @rating)" do
   describe "a successful DELETE", :given => "a Rating exists" do
     
      before(:each) do
-       @response = request(resource(Article.first, Comment.first, Rating.first), :method => "DELETE")
+       @response = request(resource(Article.first, Comment.first, Community::Rating.first), :method => "DELETE")
      end
 
      it "should redirect to resource(@article, :comments)" do
@@ -104,7 +104,7 @@ end
 describe "resource(@article, @comment, @rating, :edit)", :given => "a Rating exists" do
   
   before(:each) do
-    @response = request(resource(Article.first, Comment.first, Rating.first, :edit))
+    @response = request(resource(Article.first, Comment.first, Community::Rating.first, :edit))
   end
   
   it "should respond successfully" do
@@ -118,7 +118,7 @@ describe "resource(@article, @comment, @rating)", :given => "a Rating exists" do
   describe "GET" do
     
     before(:each) do
-      @response = request(resource(Article.first, Comment.first, Rating.first))
+      @response = request(resource(Article.first, Comment.first, Community::Rating.first))
     end
   
     it "should respond successfully" do
@@ -132,7 +132,7 @@ describe "resource(@article, @comment, @rating)", :given => "a Rating exists" do
     before(:each) do
       @article = Article.first
       @comment = Comment.first
-      @rating = Rating.first
+      @rating = Community::Rating.first
       @response = request(resource(@article, @comment, @rating), :method => "PUT", 
         :params => { :rating => { :id => @rating.id } })
     end

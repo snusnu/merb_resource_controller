@@ -1,11 +1,15 @@
-class Rating
+module Community
+
+  class Rating
   
-  include DataMapper::Resource
+    include DataMapper::Resource
   
-  property :id,         Serial
-  property :comment_id, Integer
-  property :rate,       Integer
+    property :id,         Serial
+    property :comment_id, Integer
+    property :rate,       Integer
   
-  belongs_to :comment
+    belongs_to :comment
   
+  end
+
 end
