@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
     'lib/merb_resource_controller/resource_proxy.rb',
     'lib/merb_resource_controller.rb',
     'spec/mrc_test_app',
-    'spec/mrc_test_app/Rakefile'  
+    'spec/mrc_test_app/Rakefile', 
     'spec/mrc_test_app/app/controllers/application.rb',
     'spec/mrc_test_app/app/controllers/articles.rb',
     'spec/mrc_test_app/app/controllers/community/comments.rb',
