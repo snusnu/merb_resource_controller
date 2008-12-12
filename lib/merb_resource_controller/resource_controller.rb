@@ -50,6 +50,7 @@ module Merb
           resource_proxy.path_to_resource(params)[-2].last
         end
         
+        # TODO refactor so that no additional queries are necessary
         def parents
           resource_proxy.parents.map do |parent|
             parent[:class].get(params[parent[:key]])
@@ -62,7 +63,10 @@ module Merb
         
         
         def load_resource
-          resource_proxy.path_to_resource(params).each do |pc|
+          path = resource_proxy.path_to_resource(params)
+          # puts "path_to_resource: #{path.inspect}"
+          path.each do |pc|
+            # puts "setting @#{pc[0]} to #{pc[1].inspect}" if pc[1]
             instance_variable_set("@#{pc[0]}", pc[1]) if pc[1]
           end
         end
@@ -81,6 +85,15 @@ module Merb
         end
         
         
+        def collection_name(resource = nil)
+          resource_proxy.collection_name(resource)
+        end
+        
+        def member_name(resource = nil)
+          resource_proxy.member_name(resource)
+        end
+        
+        
         def collection
           instance_variable_get("@#{collection_name}")
         end
@@ -89,17 +102,17 @@ module Merb
           instance_variable_get("@#{member_name}")
         end
         
+        
         def new_member(attributes = {})
-          resource_proxy.new(attributes)
+          resource_proxy.new_member(params, attributes)
         end
         
-        
-        def collection_name(resource = nil)
-          resource_proxy.collection_name(resource)
+        def member_params(attributes = {})
+          resource_proxy.member_params(params, attributes)
         end
         
-        def member_name(resource = nil)
-          resource_proxy.member_name(resource)
+        def parent_params
+          resource_proxy.parent_params(params)
         end
         
         

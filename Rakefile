@@ -13,6 +13,7 @@ HOMEPAGE = "http://merbivore.com/"
 SUMMARY = "A merb plugin that provides the default restful actions for controllers."
 
 spec = Gem::Specification.new do |s|
+  
   s.rubyforge_project = 'merb_resource_controller'
   s.name = GEM_NAME
   s.version = GEM_VERSION
@@ -24,9 +25,31 @@ spec = Gem::Specification.new do |s|
   s.author = AUTHOR
   s.email = EMAIL
   s.homepage = HOMEPAGE
-  s.add_dependency('merb-core', '~> 1.0')
   s.require_path = 'lib'
-  s.files = %w(LICENSE README.textile Rakefile TODO) + Dir.glob("{lib,spec}/**/*")
+  
+  # be extra picky so that no coverage info and such gets included
+  s.files = %w(LICENSE README.textile Rakefile TODO) + 
+    Dir.glob("{lib,spec}/**/*.rb") + 
+    Dir.glob("{spec}/**") + 
+    Dir.glob("{spec}/**/*.rb") + 
+    Dir.glob("{spec}/**/*.yml") +
+    Dir.glob("{spec}/**/*.opts") +
+    Dir.glob("{spec}/**/*.html.erb") +
+    [ "spec/mrc_test_app/Rakefile"]
+  
+  # runtime dependencies
+  s.add_dependency('merb-core', '~> 1.0')
+  
+  # development dependencies
+  # if these are desired, install with:
+  # gem install merb_resource_controller --development
+  s.add_development_dependency('merb-assets',    '~>1.0')
+  s.add_development_dependency('merb-helpers',   '~>1.0')
+  s.add_development_dependency('dm-core',        '~>0.9.8')
+  s.add_development_dependency('dm-validations', '~>0.9.8')
+  s.add_development_dependency('dm-serializer',  '~>0.9.8')
+  s.add_development_dependency('dm-constraints', '~>0.9.8')
+  
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -50,22 +73,9 @@ task :gemspec do
   end
 end
 
-desc 'Run specifications'
-Spec::Rake::SpecTask.new(:spec) do |t|
-  
-  t.spec_opts << '--options' << 'spec/spec.opts' if File.exists?('spec/spec.opts')
-  t.spec_files = Pathname.glob(Pathname.new(__FILE__).dirname + 'spec/**/*_spec.rb')
-
-  begin
-    t.rcov = ENV.has_key?('NO_RCOV') ? ENV['NO_RCOV'] != 'true' : true
-    t.rcov_opts << '--exclude' << 'spec'
-    t.rcov_opts << '--text-summary'
-    t.rcov_opts << '--sort' << 'coverage' << '--sort-reverse'
-  rescue Exception
-    # rcov not installed
-  end
-  
+desc 'Default: run spec examples'
+task :spec do 
+  puts "!!! README !!! Run 'rake spec' from the './spec/mrc_test_app' directory to run all specs for merb_resource_controller."
 end
 
-desc 'Default: run spec examples'
 task :default => 'spec'

@@ -1,0 +1,12 @@
+<h2>New Article</h2>
+ 
+<%= form_for(@article, :action => resource(:articles)) do %>
+ 
+  <p><%= text_field :title, :label => "Title" %></p>
+  <p><%= text_area :body, :label => "Body" %></p>
+  
+  <p><%= submit "Create" %></p>
+  
+<% end =%>
+
+<%= link_to 'All Articles', resource(:articles) %>

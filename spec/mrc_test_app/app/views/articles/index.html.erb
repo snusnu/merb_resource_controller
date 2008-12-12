@@ -1,0 +1,25 @@
+<h1>Listing Articles</h1>
+ 
+<table>
+  <tr>
+    <th>Title</th>
+    <th>Editor</th>
+    <th>Body</th>
+ 
+    <th colspan="3">Actions</th>
+  </tr>
+ 
+<% @articles.each do |article| %>
+  <tr>
+    <td><%=h article.title %></td>
+    <td><%=h article.editor_name %></td>
+    <td><%=h article.body %></td>
+ 
+    <td><%= link_to 'Show', resource(article) %></td>
+    <td><%= link_to 'Edit', resource(article, :edit) %></td>
+    <td><%= delete_button(article, "Delete #{article.title}") %></td>
+  </tr>
+<% end %>
+</table>
+ 
+<%= link_to 'New Article', resource(:articles, :new) %>

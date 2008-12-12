@@ -162,7 +162,7 @@ module Merb
       end
       
       def nesting_strategy_params(params)
-        parent_params(params) << params["id"]
+        parent_param_values(params) << params["id"]
       end
       
       def nesting_strategy
@@ -175,13 +175,34 @@ module Merb
       
       
       # all parent parameters
-      def parent_params(params)
+      def parent_param_values(params)
         parent_keys.map { |k| params[k] }
       end
       
       # the immediate parent parameter    
-      def parent_param(params)
-        parent_params(params).last
+      def parent_param_value(params)
+        parent_param_values(params).last
+      end
+      
+      
+      def new_member(params, attributes = {})
+        resource.new(member_params(params, attributes))
+      end
+      
+      def member_params(params, attributes = {})
+        if attrs = params[member_name]
+          has_parent? ? parent_params(params).merge!(attrs).merge!(attributes) : attrs.merge!(attributes)
+        else
+          has_parent? ? parent_params(params).merge!(attributes) : attributes
+        end
+      end
+      
+      def parent_params(params)
+        parent_keys.inject({}) do |hash, key|
+          key = key.to_sym
+          hash[key] = params[key] if resource.properties.map { |p| p.name }.include?(key.to_sym)
+          hash
+        end
       end
       
       

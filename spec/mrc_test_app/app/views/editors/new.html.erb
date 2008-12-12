@@ -1,0 +1,12 @@
+<h2>New Editor</h2>
+ 
+<%= form_for(@editor, :action => resource(@article, :editor) ) do %>
+ 
+  <p><%= text_field :name, :label => "Name" %></p>
+  <p><%= submit "Create" %></p>
+  
+<% end =%>
+
+<%= link_to 'Show Article', resource(@article) %>
+<%= link_to 'All Articles', resource(:articles) %>
+

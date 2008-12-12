@@ -1,0 +1,11 @@
+<h2>New Rating</h2>
+ 
+<%= form_for(@rating, :action => resource(@comment, :ratings)) do %>
+ 
+  <p><%= text_field :rate, :label => "Rating" %></p>
+  
+  <p><%= submit "Create" %></p>
+  
+<% end =%>
+
+<%= link_to 'Show Comment', resource(@comment) %>

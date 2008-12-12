@@ -1,0 +1,12 @@
+<h2>Edit Comment</h2>
+
+<%= form_for(@comment, :action => resource(@comment), :method => :put) do %>
+
+  <p><%= text_field :body,  :label => "Body"  %></p>
+  <p><%= submit "Update" %></p>
+
+<% end =%>
+
+<%= link_to 'Show Comment', resource(@comment) %> | 
+<%= link_to 'Show Article', resource(@comment.article) if @comment.article %> | 
+<%= link_to 'All Articles', resource(:articles) %>

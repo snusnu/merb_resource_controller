@@ -1,0 +1,13 @@
+<h2>Edit Article</h2>
+
+<%= form_for(@article, :action => resource(@article), :method => :put) do %>
+
+  <p><%= text_field :title, :label => "Title"  %></p>
+  <p><%= text_field :body,  :label => "Body"  %></p>
+  <p><%= submit "Update" %></p>
+
+<% end =%>
+
+<%= link_to 'Show Editor', resource(@article, :editor) %> | 
+<%= link_to 'Show Article', resource(@article) %> | 
+<%= link_to 'All Articles', resource(:articles) %>

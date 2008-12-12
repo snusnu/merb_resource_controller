@@ -1,0 +1,11 @@
+<h2>Edit Rating</h2>
+
+<%= form_for(@rating, :action => resource(@comment, @rating), :method => :put) do %>
+
+  <p><%= text_field :rate,  :label => "Rating"  %></p>
+  <p><%= submit "Update" %></p>
+
+<% end =%>
+
+<%= link_to 'Show Comment', resource(@comment) %> | 
+<%= link_to 'Show Rating', resource(@comment, @rating) %>

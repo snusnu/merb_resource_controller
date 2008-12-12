@@ -1,0 +1,8 @@
+<h2>Show Article</h2>
+ 
+<h3><%=h @article.title %></h3>
+<p><%=h @article.body %></p>
+ 
+<%= link_to 'Edit Article', resource(@article, :edit) %>
+<%= link_to 'All Articles', resource(:articles) %>
+

@@ -82,13 +82,13 @@ module Merb
         
         def create
           load_resource
-          set_member(new_member(params[member_name]))
+          set_member(new_member)
           if member.save
             options = flash_supported? ? { :message => successful_create_messages } : {}
             redirect redirect_on_successful_create, options
           else
             message.merge!(failed_create_messages) if flash_supported?
-            render :new
+            render :new, :status => 406
           end
         end
         
@@ -119,7 +119,7 @@ module Merb
             redirect redirect_on_successful_update, options
           else
             message.merge!(failed_update_messages) if flash_supported?
-            display requested_resource, :edit
+            display requested_resource, :edit, :status => 406
           end
         end
         
