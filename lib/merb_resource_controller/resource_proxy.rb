@@ -30,7 +30,7 @@ module Merb
       end
             
       def actions(*names)
-        names.each { |n| @actions << n.is_a?(Hash) ? n : { :name => n.to_sym } }
+        names.each { |n| @actions << (n.is_a?(Hash) ? n : { :name => n.to_sym }) }
       end
       
       def registered_actions
