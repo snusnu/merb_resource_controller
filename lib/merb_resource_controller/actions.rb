@@ -84,12 +84,20 @@ module Merb
           load_resource
           set_member(new_member)
           if member.save
-            options = flash_supported? ? { :message => successful_create_messages } : {}
-            redirect redirect_on_successful_create, options
+            on_successful_create
           else
-            message.merge!(failed_create_messages) if flash_supported?
-            render :new, :status => 406
+            on_failing_create
           end
+        end
+        
+        def on_successful_create
+          options = flash_supported? ? { :message => successful_create_messages } : {}
+          redirect redirect_on_successful_create, options          
+        end
+        
+        def on_failing_create
+          message.merge!(failed_create_messages) if flash_supported?
+          render :new, :status => 406
         end
         
         def redirect_on_successful_create
@@ -115,12 +123,20 @@ module Merb
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           if requested_resource.update_attributes(params[member_name])
-            options = flash_supported? ? { :message => successful_update_messages } : {}
-            redirect redirect_on_successful_update, options
+            on_successful_update
           else
-            message.merge!(failed_update_messages) if flash_supported?
-            display requested_resource, :edit, :status => 406
+            on_failing_update
           end
+        end
+        
+        def on_successful_update
+          options = flash_supported? ? { :message => successful_update_messages } : {}
+          redirect redirect_on_successful_update, options
+        end
+        
+        def on_failing_update
+          message.merge!(failed_update_messages) if flash_supported?
+          display requested_resource, :edit, :status => 406
         end
         
         def redirect_on_successful_update
@@ -146,11 +162,19 @@ module Merb
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           if requested_resource.destroy
-            options = flash_supported? ? { :message => successful_destroy_messages } : {}
-            redirect redirect_on_successful_destroy, options
+            on_successful_destroy
           else
-            raise Merb::ControllerExceptions::InternalServerError
+            on_failing_destroy
           end
+        end
+        
+        def on_successful_destroy
+          options = flash_supported? ? { :message => successful_destroy_messages } : {}
+          redirect redirect_on_successful_destroy, options
+        end
+        
+        def on_failing_destroy
+          raise Merb::ControllerExceptions::InternalServerError
         end
         
         def redirect_on_successful_destroy

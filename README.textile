@@ -228,11 +228,9 @@ def create
   load_resource
   set_member(new_member(params[member_name]))
   if member.save
-    options = flash_supported? ? { :message => successful_create_messages } : {}
-    redirect redirect_on_successful_create, options
+    on_successful_create
   else
-    message.merge!(failed_create_messages) if flash_supported?
-    render :new
+    on_failing_create
   end
 end
 
@@ -240,11 +238,9 @@ def update
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   if requested_resource.update_attributes(params[member_name])
-    options = flash_supported? ? { :message => successful_update_messages } : {}
-    redirect redirect_on_successful_update, options
+    on_successful_update
   else
-    message.merge!(failed_update_messages) if flash_supported?
-    display requested_resource, :edit
+    on_failing_update
   end
 end
 
@@ -252,30 +248,64 @@ def destroy
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   if requested_resource.destroy
-    options = flash_supported? ? { :message => successful_destroy_messages } : {}
-    redirect redirect_on_successful_destroy, options
+    on_successful_destroy
   else
-    raise Merb::ControllerExceptions::InternalServerError
+    on_failing_destroy
   end
 end
 </code>
 </pre>
 
-h2. Additional Helper Methods
+h2. Additional Methods to override
 
-In addition to the actions and the methods they are using, you will probably want to override the redirection targets
-These are the default method implementations you can override to this effect:
+In addition to the actions and the methods they are using, you will probably want to override some other methods that
+@merb_resource_controller@ uses to do its thing. Here are some default method implementations you can override to this effect:
 
 <pre>
 <code>
+# Customize the create action
+
+def on_successful_create
+  options = flash_supported? ? { :message => successful_create_messages } : {}
+  redirect redirect_on_successful_create, options          
+end
+
+def on_failing_create
+  message.merge!(failed_create_messages) if flash_supported?
+  render :new, :status => 406
+end
+
 def redirect_on_successful_create
   target = singleton_controller? ? member_name : member
   resource(*(has_parent? ? parents + [ target ] : [ target ]))
 end
 
+# Customize the update action
+
+def on_successful_update
+  options = flash_supported? ? { :message => successful_update_messages } : {}
+  redirect redirect_on_successful_update, options
+end
+
+def on_failing_update
+  message.merge!(failed_update_messages) if flash_supported?
+  display requested_resource, :edit, :status => 406
+end
+
 def redirect_on_successful_update
   target = singleton_controller? ? member_name : member
   resource(*(has_parent? ? parents + [ target ] : [ target ]))
+end
+
+# Customize the destroy action
+
+def on_successful_destroy
+  options = flash_supported? ? { :message => successful_destroy_messages } : {}
+  redirect redirect_on_successful_destroy, options
+end
+
+def on_failing_destroy
+  raise Merb::ControllerExceptions::InternalServerError
 end
 
 def redirect_on_successful_destroy
