@@ -10,16 +10,20 @@ module Merb
       module ClassMethods
         
         def controlling(name, options = {})
-          options = { :flash => true }.merge!(options)
           @resource_proxy = Merb::ResourceController::ResourceProxy.new(name, options)
           yield @resource_proxy if block_given?
           class_inheritable_reader :resource_proxy
           include InstanceMethods
-          include FlashSupport if options[:flash]
-          @resource_proxy.registered_actions.each do |a|
-            include Merb::ResourceController::Actions.const_get("#{a[:name].to_s.camel_case}")
-            show_action(a[:name])
+          @resource_proxy.registered_actions.each do |action|
+            action_support = action_module(action[:name])
+            include action_support
+            include action_support.const_get("FlashSupport") if action[:flash]
+            show_action(action[:name])
           end
+        end
+        
+        def action_module(action)
+          Merb::ResourceController::Actions.const_get(Extlib::Inflection.classify(action))
         end
     
       end
@@ -64,9 +68,7 @@ module Merb
         
         def load_resource
           path = resource_proxy.path_to_resource(params)
-          # puts "path_to_resource: #{path.inspect}"
           path.each do |pc|
-            # puts "setting @#{pc[0]} to #{pc[1].inspect}" if pc[1]
             instance_variable_set("@#{pc[0]}", pc[1]) if pc[1]
           end
         end
@@ -116,42 +118,11 @@ module Merb
         end
         
         
-        def flash_supported?
-          self.kind_of?(FlashSupport)
+        def flash_messages_for?(action)
+          return false unless action_support = self.class.action_module(action)
+          self.kind_of?(action_support.const_get("FlashSupport"))
         end
     
-      end
-      
-      module FlashSupport
-        
-        protected
-        
-        def successful_create_messages
-          { :notice => "#{member.class.name} was successfully created" }
-        end
-                
-        def failed_create_messages
-          { :error => "Failed to create new #{member.class.name}" }
-        end
-        
-                
-        def successful_update_messages
-          { :notice => "#{member.class.name} was successfully updated" }
-        end
-                
-        def failed_update_messages
-          { :error => "Failed to update #{member.class.name}" }
-        end
-                
-                
-        def successful_destroy_messages
-          { :notice => "#{member.class.name} was successfully destroyed" }
-        end
-                
-        def failed_destroy_messages
-          { :error => "Failed to destroy #{member.class.name}" }
-        end
-        
       end
   
     end

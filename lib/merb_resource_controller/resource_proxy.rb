@@ -29,8 +29,8 @@ module Merb
         @actions << { :name => name.to_sym }.merge(options)
       end
             
-      def actions(*names)
-        names.each { |n| @actions << (n.is_a?(Hash) ? n : { :name => n.to_sym }) }
+      def actions(*action_specs)
+        action_specs.each { |a| a.is_a?(Hash) ? action(a.delete(:name), a) : action(a) }
       end
       
       def registered_actions
@@ -277,9 +277,12 @@ module Merb
       
       def register_default_actions!
         action :index unless @singleton
-        [ :show, :new, :edit, :create, :update, :destroy ].each do |a|
-          action(a)
-        end
+        action :show
+        action :new
+        action :edit
+        action :create,  :flash => true
+        action :update,  :flash => true
+        action :destroy, :flash => true
       end
       
       

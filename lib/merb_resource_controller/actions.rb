@@ -90,19 +90,35 @@ module Merb
           end
         end
         
+        protected
+        
         def on_successful_create
-          options = flash_supported? ? { :message => successful_create_messages } : {}
+          options = flash_messages_for?(:create) ? { :message => successful_create_messages } : {}
           redirect redirect_on_successful_create, options          
         end
         
         def on_failing_create
-          message.merge!(failed_create_messages) if flash_supported?
+          message.merge!(failed_create_messages) if flash_messages_for?(:create)
           render :new, :status => 406
         end
         
         def redirect_on_successful_create
           target = singleton_controller? ? member_name : member
           resource(*(has_parent? ? parents + [ target ] : [ target ]))
+        end
+        
+        module FlashSupport
+
+          protected
+
+          def successful_create_messages
+            { :notice => "#{member.class.name} was successfully created" }
+          end
+
+          def failed_create_messages
+            { :error => "Failed to create new #{member.class.name}" }
+          end
+          
         end
         
       end
@@ -129,19 +145,35 @@ module Merb
           end
         end
         
+        protected
+        
         def on_successful_update
-          options = flash_supported? ? { :message => successful_update_messages } : {}
+          options = flash_messages_for?(:update) ? { :message => successful_update_messages } : {}
           redirect redirect_on_successful_update, options
         end
         
         def on_failing_update
-          message.merge!(failed_update_messages) if flash_supported?
+          message.merge!(failed_update_messages) if flash_messages_for?(:update)
           display requested_resource, :edit, :status => 406
         end
         
         def redirect_on_successful_update
           target = singleton_controller? ? member_name : member
           resource(*(has_parent? ? parents + [ target ] : [ target ]))
+        end
+        
+        module FlashSupport
+
+          protected
+
+          def successful_update_messages
+            { :notice => "#{member.class.name} was successfully updated" }
+          end
+
+          def failed_update_messages
+            { :error => "Failed to update #{member.class.name}" }
+          end
+          
         end
         
       end
@@ -168,8 +200,10 @@ module Merb
           end
         end
         
+        protected
+        
         def on_successful_destroy
-          options = flash_supported? ? { :message => successful_destroy_messages } : {}
+          options = flash_messages_for?(:destroy) ? { :message => successful_destroy_messages } : {}
           redirect redirect_on_successful_destroy, options
         end
         
@@ -183,6 +217,20 @@ module Merb
           else
             resource(*(has_parent? ? parents + [ collection_name ] : [ collection_name ]))
           end
+        end
+        
+        module FlashSupport
+
+          protected
+
+          def successful_destroy_messages
+            { :notice => "#{member.class.name} was successfully destroyed" }
+          end
+
+          def failed_destroy_messages
+            { :error => "Failed to destroy #{member.class.name}" }
+          end
+          
         end
         
       end
