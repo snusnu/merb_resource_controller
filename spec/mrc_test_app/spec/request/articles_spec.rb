@@ -134,6 +134,108 @@ describe "POST resource(:articles)" do
   
 end
 
+describe "XML POST resource(:articles)" do
+  
+  describe "Success" do
+  
+    before(:each) do
+      Article.all.destroy!
+      @response = request(resource(:articles),
+        :method => "POST",
+        :params => { :article => { :id => nil, :title => "Hey there", :body => "Me like snusnu" }},
+        "HTTP_ACCEPT" => "application/xml"
+        )
+    end
+  
+    it "should return a 201 (Created) status" do
+      @response.status.should == 201
+      @response.body.length.should_not == 0
+    end
+    
+  end
+  
+  describe "Failure" do
+
+    before(:each) do
+      Article.all.destroy!
+      @response = request(
+        resource(:articles), 
+        :method => "POST", 
+        :params => { 
+          :article => { 
+            :id => nil,
+            :title => nil,
+            :body => "article body" 
+          }
+        },
+        "HTTP_ACCEPT" => "application/xml"
+      )
+    end
+
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 422
+    end
+
+    it "should return the serialized errors that occured" do
+      @response.body.size.should >= 0
+    end
+
+  end
+  
+end
+
+describe "XML POST resource(:articles)" do
+  
+  describe "Success" do
+  
+    before(:each) do
+      Article.all.destroy!
+      @response = request(resource(:articles),
+        :method => "POST",
+        :params => { :article => { :id => nil, :title => "Hey there", :body => "Me like snusnu" }},
+        "HTTP_ACCEPT" => "application/json"
+        )
+    end
+  
+    it "should return a 201 (Created) status" do
+      @response.status.should == 201
+      @response.body.length.should_not == 0
+    end
+    
+  end
+  
+  describe "Failure" do
+
+    before(:each) do
+      Article.all.destroy!
+      @response = request(
+        resource(:articles), 
+        :method => "POST", 
+        :params => { 
+          :article => { 
+            :id => nil,
+            :title => nil,
+            :body => "article body" 
+          }
+        },
+        "HTTP_ACCEPT" => "application/json"
+      )
+    end
+
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 422
+    end
+
+    it "should return the serialized errors that occured" do
+      @response.body.size.should >= 0
+    end
+
+  end
+  
+end
+
 describe "PUT resource(@article)", :given => "an Article exists" do
   
   describe "Success" do
@@ -177,6 +279,96 @@ describe "PUT resource(@article)", :given => "an Article exists" do
   
 end
 
+describe "XML PUT resource(@article)", :given => "an Article exists" do
+  
+  describe "Success" do
+    
+    before(:each) do
+      @article = Article.first
+      @response = request(resource(@article),
+        :method => "PUT",
+        :params => { :article => { :id => @article.id } },
+        "HTTP_ACCEPT" => "application/xml")
+    end
+    
+    it "should return an empty response with a 200 (OK) status" do
+      @response.status.should == 200
+      @response.body.length.should == 0
+    end
+    
+  end
+  
+  
+  describe "Failure" do
+  
+    before(:each) do
+      @article = Article.first
+      @response = request(
+        resource(@article), 
+        :method => "PUT", 
+        :params => { :article => { :id => @article.id, :title => nil, :body => "updated body" } },
+        "HTTP_ACCEPT" => "application/xml"
+      )
+    end
+  
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 422
+    end
+    
+    it "should return the serialized errors that occured" do
+      @response.body.size.should >= 0
+    end
+  
+  end
+  
+end
+
+describe "JSON PUT resource(@article)", :given => "an Article exists" do
+  
+  describe "Success" do
+    
+    before(:each) do
+      @article = Article.first
+      @response = request(resource(@article),
+        :method => "PUT",
+        :params => { :article => { :id => @article.id } },
+        "HTTP_ACCEPT" => "application/json")
+    end
+    
+    it "should return an empty response with a 200 (OK) status" do
+      @response.status.should == 200
+      @response.body.length.should == 0
+    end
+    
+  end
+  
+  
+  describe "Failure" do
+  
+    before(:each) do
+      @article = Article.first
+      @response = request(
+        resource(@article), 
+        :method => "PUT", 
+        :params => { :article => { :id => @article.id, :title => nil, :body => "updated body" } },
+        "HTTP_ACCEPT" => "application/json"
+      )
+    end
+  
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 422
+    end
+    
+    it "should render the serialized errors that occured" do
+      @response.body.size.should >= 0
+    end
+  
+  end
+  
+end
+
 describe "DELETE resource(@article)" do
   
   describe "Success", :given => "an Article exists" do
@@ -196,6 +388,80 @@ describe "DELETE resource(@article)" do
     before(:each) do
       Article.all.destroy!
       @response = request('/articles/1', :method => "DELETE")
+    end
+
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 404
+    end
+
+  end
+  
+end
+
+describe "XML DELETE resource(@article)" do
+  
+  describe "Success", :given => "an Article exists" do
+    
+    before(:each) do
+      @response = request(resource(Article.first),
+        :method => "DELETE",
+        "HTTP_ACCEPT" => "application/xml"
+      )
+    end
+    
+    it "should return an empty response with a 200 (OK) status" do
+      @response.status.should == 200
+      @response.body.length.should == 0
+    end
+ 
+  end
+  
+  describe "Failure" do
+    
+    before(:each) do
+      Article.all.destroy!
+      @response = request('/articles/1', 
+        :method => "DELETE",
+        "HTTP_ACCEPT" => "application/xml"
+      )
+    end
+
+    it "should not be successful" do
+      @response.should_not be_successful
+      @response.status.should == 404
+    end
+
+  end
+  
+end
+
+describe "JSON DELETE resource(@article)" do
+  
+  describe "Success", :given => "an Article exists" do
+    
+    before(:each) do
+      @response = request(resource(Article.first),
+        :method => "DELETE",
+        "HTTP_ACCEPT" => "application/json"
+      )
+    end
+    
+    it "should return an empty response with a 200 (OK) status" do
+      @response.status.should == 200
+      @response.body.length.should == 0
+    end
+ 
+  end
+  
+  describe "Failure" do
+    
+    before(:each) do
+      Article.all.destroy!
+      @response = request('/articles/1', 
+        :method => "DELETE",
+        "HTTP_ACCEPT" => "application/json"
+      )
     end
 
     it "should not be successful" do

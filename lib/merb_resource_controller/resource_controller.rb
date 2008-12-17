@@ -10,20 +10,15 @@ module Merb
       module ClassMethods
         
         def controlling(name, options = {})
-          @resource_proxy = Merb::ResourceController::ResourceProxy.new(name, options)
+          @resource_proxy = ResourceProxy.new(name, class_provided_formats, options)
           yield @resource_proxy if block_given?
           class_inheritable_reader :resource_proxy
           include InstanceMethods
-          @resource_proxy.registered_actions.each do |action|
-            action_support = action_module(action[:name])
-            include action_support
-            include action_support.const_get("FlashSupport") if action[:flash]
-            show_action(action[:name])
+          @resource_proxy.registered_actions.each do |action_descriptor|
+            include action_descriptor.action_module
+            include action_descriptor.flash_module if action_descriptor.supports_flash_messages?
+            show_action(action_descriptor.action_name)
           end
-        end
-        
-        def action_module(action)
-          Merb::ResourceController::Actions.const_get(Extlib::Inflection.classify(action))
         end
     
       end
@@ -34,6 +29,26 @@ module Merb
     
         def resource_proxy
           self.class.resource_proxy
+        end
+        
+        
+        def handle_content_type(action, format, scenario)
+          if handler = content_type_handler(action, format, scenario)
+            self.send(handler) if self.respond_to?(handler)
+          else
+            raise "no content type handler registered for #{action} #{format} #{scenario}"
+          end
+        end
+        
+        def content_type_handler(action, format, scenario)
+          resource_proxy.content_type_handler(action, format, scenario)
+        end
+        
+        def set_action_specific_provides(action)
+          if resource_proxy.has_format_restriction?(action)
+            provides_api, formats = resource_proxy.action_specific_provides(action)
+            self.send(provides_api, *formats)
+          end
         end
         
         
@@ -67,8 +82,7 @@ module Merb
         
         
         def load_resource
-          path = resource_proxy.path_to_resource(params)
-          path.each do |pc|
+          resource_proxy.path_to_resource(params).each do |pc|
             instance_variable_set("@#{pc[0]}", pc[1]) if pc[1]
           end
         end
@@ -119,8 +133,7 @@ module Merb
         
         
         def flash_messages_for?(action)
-          return false unless action_support = self.class.action_module(action)
-          self.kind_of?(action_support.const_get("FlashSupport"))
+          resource_proxy.flash_messages_for?(action)
         end
     
       end

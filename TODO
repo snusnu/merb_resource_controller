@@ -2,6 +2,5 @@ TODO
 ====
 
 # Infer route nesting strategy from @Merb::Router@
-# Customizable support for @provides@ and @only_provides@
 # Support for user stamps (aka created_by and updated_by)
 # Support for pagination once an _official_ merb pagination solution exists

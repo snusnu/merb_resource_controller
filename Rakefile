@@ -6,7 +6,7 @@ require 'merb-core/tasks/merb'
 require "spec/rake/spectask"
 
 GEM_NAME = "merb_resource_controller"
-GEM_VERSION = "0.1.0"
+GEM_VERSION = "0.2.0"
 AUTHOR = "Martin Gamsjaeger"
 EMAIL = "gamsnjaga@gmail.com"
 HOMEPAGE = "http://merbivore.com/"

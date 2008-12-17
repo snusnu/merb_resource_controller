@@ -11,7 +11,6 @@ dependency "dm-constraints", dm_gems_version
 dependency "merb-assets",    merb_gems_version
 dependency "merb-helpers",   merb_gems_version
 
-
 use_orm :datamapper
 use_test :rspec
 use_template_engine :erb

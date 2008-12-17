@@ -13,11 +13,12 @@ module Merb
         :use => :all
       })
       
-      attr_reader :resource, :parents, :registered_methods
+      attr_reader :resource, :provided_formats, :parents, :registered_methods
       
-      def initialize(resource, options = {})
+      def initialize(resource, provided_formats, options = {})
         options = DEFAULT_OPTIONS.merge(options)
         @resource, @singleton = load_resource(resource), !!options[:singleton]
+        @provided_formats = provided_formats || [ :html ]
         @fully_qualified = !!options[:fully_qualified]
         @actions, @registered_methods, @parents = [], [], []
         @specific_methods_registered = options[:use] != :all
@@ -26,7 +27,10 @@ module Merb
       end
       
       def action(name, options = {})
-        @actions << { :name => name.to_sym }.merge(options)
+        options = { :default_formats => true }.merge(options)
+        descriptor = ActionDescriptor.new(name, @provided_formats, options)
+        yield descriptor if block_given?
+        @actions << descriptor
       end
             
       def actions(*action_specs)
@@ -35,6 +39,40 @@ module Merb
       
       def registered_actions
         @actions
+      end
+      
+      def flash_messages_for?(action)
+        return false unless @actions.map { |ad| ad.action_name }.include?(action.to_sym)
+        @actions.any? { |ad| ad.action_name == action.to_sym && ad.supports_flash_messages? }
+      end
+      
+      
+      def action_descriptor(action)
+        ad = @actions.select { |ad| ad.action_name == action.to_sym }
+        ad.first ? ad.first : raise("No action named #{action} is registered for this controller")
+      end
+      
+      def content_type_handler(action, format, scenario)
+        action_descriptor(action).content_type_handler(format, scenario)
+      end
+      
+      def has_format_restriction?(action)
+        action_descriptor(action).has_format_restriction?
+      end
+      
+      def action_specific_provides(action)
+        ad = action_descriptor(action)
+        [ ad.format_restriction_api, ad.restricted_formats ]
+      end
+      
+      def register_default_actions!
+        action :index    unless @singleton
+        action :show
+        action :new,     :only_provides => :html
+        action :edit,    :only_provides => :html
+        action :create,  :flash => true
+        action :update,  :flash => true
+        action :destroy, :flash => true
       end
       
       # ----------------------------------------------------------------------------------------
@@ -273,16 +311,6 @@ module Merb
         else
           raise "resource must be either a Symbol, a String or a Class"
         end
-      end
-      
-      def register_default_actions!
-        action :index unless @singleton
-        action :show
-        action :new
-        action :edit
-        action :create,  :flash => true
-        action :update,  :flash => true
-        action :destroy, :flash => true
       end
       
       

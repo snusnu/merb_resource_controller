@@ -200,57 +200,62 @@ how the controllers behave. Of course you are also free to override all the meth
 <pre>
 <code>  
 def index
+  set_action_specific_provides(:index)
   load_resource
   display requested_resource
 end
 
 def show
+  set_action_specific_provides(:show)
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   display requested_resource
 end
 
 def new
-  only_provides :html
+  set_action_specific_provides(:new)
   load_resource
   set_member(new_member)
   display member
 end
 
 def edit
-  only_provides :html
+  set_action_specific_provides(:edit)
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   display requested_resource
 end
 
 def create
+  set_action_specific_provides(:create)
   load_resource
-  set_member(new_member(params[member_name]))
+  set_member(new_member)
   if member.save
-    on_successful_create
+    handle_successful_create
   else
-    on_failing_create
+    handle_failed_create
   end
 end
 
 def update
+  set_action_specific_provides(:update)
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   if requested_resource.update_attributes(params[member_name])
-    on_successful_update
+    handle_successful_update
   else
-    on_failing_update
+    handle_failed_update
   end
 end
 
 def destroy
+  set_action_specific_provides(:destroy)
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
   if requested_resource.destroy
-    on_successful_destroy
+    handle_successful_destroy
   else
-    on_failing_destroy
+    handle_failed_destroy
   end
 end
 </code>
@@ -261,19 +266,47 @@ h2. Additional Methods to override
 In addition to the actions and the methods they are using, you will probably want to override some other methods that
 @merb_resource_controller@ uses to do its thing. Here are some default method implementations you can override to this effect:
 
+h3. Customize the create action
+
 <pre>
 <code>
-# Customize the create action
+def handle_successful_create
+  handle_content_type(:create, content_type, :success)
+end
 
-def on_successful_create
+def handle_failed_create
+  handle_content_type(:create, content_type, :failure)
+end
+
+
+def html_response_on_successful_create
   options = flash_messages_for?(:create) ? { :message => successful_create_messages } : {}
   redirect redirect_on_successful_create, options          
 end
-
-def on_failing_create
+        
+def html_response_on_failed_create
   message.merge!(failed_create_messages) if flash_messages_for?(:create)
-  render :new, :status => 406
+  render :new, :status => 406         
 end
+
+        
+def xml_response_on_successful_create
+  display member, :status => 201, :location => resource(member)
+end
+        
+def xml_response_on_failed_create
+  display member.errors, :status => 422
+end        
+
+     
+def json_response_on_successful_create
+  display member, :status => 201, :location => resource(member)         
+end
+        
+def json_response_on_failed_create
+  display member.errors, :status => 422
+end
+
 
 def redirect_on_successful_create
   target = singleton_controller? ? member_name : member
@@ -292,17 +325,48 @@ end
 def failed_create_messages
   { :error => "Failed to create new #{member.class.name}" }
 end
+</code>
+</pre>
 
-# Customize the update action
+h3. Customize the update action
 
-def on_successful_update
-  options = flash_messages_for?(:update) ? { :message => successful_update_messages } : {}
-  redirect redirect_on_successful_update, options
+<code>
+<pre>
+def handle_successful_update
+  handle_content_type(:update, content_type, :success)
 end
 
-def on_failing_update
+def handle_failed_update
+  handle_content_type(:update, content_type, :failure)
+end
+
+
+def html_response_on_successful_update
+  options = flash_messages_for?(:update) ? { :message => successful_update_messages } : {}
+  redirect redirect_on_successful_update, options       
+end
+        
+def html_response_on_failed_update
   message.merge!(failed_update_messages) if flash_messages_for?(:update)
   display requested_resource, :edit, :status => 406
+end
+
+        
+def xml_response_on_successful_update
+  "" # render no content, just 200 (OK) status.
+end
+        
+def xml_response_on_failed_update
+  display member.errors, :status => 422
+end        
+
+     
+def json_response_on_successful_update
+  "" # render no content, just 200 (OK) status.
+end
+        
+def json_response_on_failed_update
+  display member.errors, :status => 422
 end
 
 def redirect_on_successful_update
@@ -322,17 +386,35 @@ end
 def failed_update_messages
   { :error => "Failed to update #{member.class.name}" }
 end
+</code>
+</pre>
 
-# Customize the destroy action
+h3. Customize the destroy action
 
-def on_successful_destroy
-  options = flash_messages_for?(:destroy) ? { :message => successful_destroy_messages } : {}
-  redirect redirect_on_successful_destroy, options
+<code>
+<pre>
+def handle_successful_destroy
+  handle_content_type(:destroy, content_type, :success)
 end
 
-def on_failing_destroy
+def handle_failed_destroy
   raise Merb::ControllerExceptions::InternalServerError
 end
+
+
+def html_response_on_successful_destroy
+  options = flash_messages_for?(:destroy) ? { :message => successful_destroy_messages } : {}
+  redirect redirect_on_successful_destroy, options 
+end
+        
+def xml_response_on_successful_destroy
+  "" # render no content, just 200 (OK) status.
+end
+     
+def json_response_on_successful_destroy
+  "" # render no content, just 200 (OK) status.
+end
+
 
 def redirect_on_successful_destroy
   if singleton_controller?
@@ -370,6 +452,5 @@ behaves under the given circumstances.
 h2. TODO
 
 # Infer route nesting strategy from @Merb::Router@
-# Customizable support for @provides@ and @only_provides@
 # Support for user stamps (aka created_by and updated_by)
 # Support for pagination once an _official_ merb pagination solution exists

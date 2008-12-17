@@ -31,7 +31,7 @@ describe "Merb::ResourceController::ResourceProxy" do
   describe "with default options" do
     
     before(:each) do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       @p = Merb::ResourceController::ResourceProxy.new(:articles, options)
     end
     
@@ -53,7 +53,7 @@ describe "Merb::ResourceController::ResourceProxy" do
     
     it "should have the default actions registered" do
       default_actions = [ :index, :show, :new, :edit, :create, :update, :destroy ]
-      actions = @p.registered_actions.map { |h| h[:name] }
+      actions = @p.registered_actions.map { |ad| ad.action_name }
       
       actions.size.should == default_actions.size
       actions.all? { |a| default_actions.include?(a) }.should be_true
@@ -77,14 +77,14 @@ describe "Merb::ResourceController::ResourceProxy" do
   describe "with invalid (parent) resource" do
 
     it "should raise NameError when initialized with an invalid resource" do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       lambda {
         Merb::ResourceController::ResourceProxy.new(:foo, options)
       }.should raise_error(NameError)
     end
     
     it "should raise NameError when it should belong to an invalid parent resource" do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       lambda {
         p = Merb::ResourceController::ResourceProxy.new("Community::Comment", options)
         p.belongs_to :foo
@@ -97,7 +97,7 @@ describe "Merb::ResourceController::ResourceProxy" do
   describe "with no parent resource" do
     
     before(:each) do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       @p = Merb::ResourceController::ResourceProxy.new(:articles, options)
     end
     
@@ -146,7 +146,7 @@ describe "Merb::ResourceController::ResourceProxy" do
   describe "with a single parent resource" do
     
     before(:each) do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       @p = Merb::ResourceController::ResourceProxy.new("Community::Comment", options)
       @p.belongs_to :article
     end
@@ -208,7 +208,7 @@ describe "Merb::ResourceController::ResourceProxy" do
   describe "with multiple parent resources with default keys" do
     
     before(:each) do
-      options = { :defaults => true, :flash => true, :use => :all }
+      options = { :defaults => true, :use => :all }
       @p = Merb::ResourceController::ResourceProxy.new("Community::Rating", options)
       @p.belongs_to [ :article, "Community::Comment" ]
     end

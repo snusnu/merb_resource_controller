@@ -11,6 +11,7 @@ module Merb
         # end
         
         def index
+          set_action_specific_provides(:index)
           load_resource
           display requested_resource
         end
@@ -26,6 +27,7 @@ module Merb
         # end
         
         def show
+          set_action_specific_provides(:show)
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           display requested_resource
@@ -42,7 +44,7 @@ module Merb
         # end
         
         def new
-          only_provides :html
+          set_action_specific_provides(:new)
           load_resource
           set_member(new_member)
           display member
@@ -60,7 +62,7 @@ module Merb
         # end
         
         def edit
-          only_provides :html
+          set_action_specific_provides(:edit)
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           display requested_resource
@@ -81,26 +83,55 @@ module Merb
         # end
         
         def create
+          set_action_specific_provides(:create)
           load_resource
           set_member(new_member)
           if member.save
-            on_successful_create
+            handle_successful_create
           else
-            on_failing_create
+            handle_failed_create
           end
         end
         
         protected
+                
+        def handle_successful_create
+          handle_content_type(:create, content_type, :success)
+        end
         
-        def on_successful_create
+        def handle_failed_create
+          handle_content_type(:create, content_type, :failure)
+        end
+        
+        
+        def html_response_on_successful_create
           options = flash_messages_for?(:create) ? { :message => successful_create_messages } : {}
           redirect redirect_on_successful_create, options          
         end
-        
-        def on_failing_create
+                
+        def html_response_on_failed_create
           message.merge!(failed_create_messages) if flash_messages_for?(:create)
-          render :new, :status => 406
+          render :new, :status => 406         
         end
+        
+                
+        def xml_response_on_successful_create
+          display member, :status => 201, :location => resource(member)
+        end
+                
+        def xml_response_on_failed_create
+          display member.errors, :status => 422
+        end        
+        
+             
+        def json_response_on_successful_create
+          display member, :status => 201, :location => resource(member)         
+        end
+                
+        def json_response_on_failed_create
+          display member.errors, :status => 422
+        end
+        
         
         def redirect_on_successful_create
           target = singleton_controller? ? member_name : member
@@ -136,25 +167,53 @@ module Merb
         # end
         
         def update
+          set_action_specific_provides(:update)
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           if requested_resource.update_attributes(params[member_name])
-            on_successful_update
+            handle_successful_update
           else
-            on_failing_update
+            handle_failed_update
           end
         end
         
         protected
         
-        def on_successful_update
-          options = flash_messages_for?(:update) ? { :message => successful_update_messages } : {}
-          redirect redirect_on_successful_update, options
+        def handle_successful_update
+          handle_content_type(:update, content_type, :success)
         end
         
-        def on_failing_update
+        def handle_failed_update
+          handle_content_type(:update, content_type, :failure)
+        end
+        
+        
+        def html_response_on_successful_update
+          options = flash_messages_for?(:update) ? { :message => successful_update_messages } : {}
+          redirect redirect_on_successful_update, options       
+        end
+                
+        def html_response_on_failed_update
           message.merge!(failed_update_messages) if flash_messages_for?(:update)
           display requested_resource, :edit, :status => 406
+        end
+        
+                
+        def xml_response_on_successful_update
+          "" # render no content, just 200 (OK) status.
+        end
+                
+        def xml_response_on_failed_update
+          display member.errors, :status => 422
+        end        
+        
+             
+        def json_response_on_successful_update
+          "" # render no content, just 200 (OK) status.
+        end
+                
+        def json_response_on_failed_update
+          display member.errors, :status => 422
         end
         
         def redirect_on_successful_update
@@ -191,25 +250,40 @@ module Merb
         # end
         
         def destroy
+          set_action_specific_provides(:destroy)
           load_resource
           raise Merb::ControllerExceptions::NotFound unless requested_resource
           if requested_resource.destroy
-            on_successful_destroy
+            handle_successful_destroy
           else
-            on_failing_destroy
+            handle_failed_destroy
           end
         end
         
         protected
         
-        def on_successful_destroy
-          options = flash_messages_for?(:destroy) ? { :message => successful_destroy_messages } : {}
-          redirect redirect_on_successful_destroy, options
+        def handle_successful_destroy
+          handle_content_type(:destroy, content_type, :success)
         end
         
-        def on_failing_destroy
+        def handle_failed_destroy
           raise Merb::ControllerExceptions::InternalServerError
         end
+        
+        
+        def html_response_on_successful_destroy
+          options = flash_messages_for?(:destroy) ? { :message => successful_destroy_messages } : {}
+          redirect redirect_on_successful_destroy, options 
+        end
+                
+        def xml_response_on_successful_destroy
+          "" # render no content, just 200 (OK) status.
+        end
+             
+        def json_response_on_successful_destroy
+          "" # render no content, just 200 (OK) status.
+        end
+        
         
         def redirect_on_successful_destroy
           if singleton_controller?
