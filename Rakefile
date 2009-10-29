@@ -12,6 +12,9 @@ EMAIL = "gamsnjaga@gmail.com"
 HOMEPAGE = "http://merbivore.com/"
 SUMMARY = "A merb plugin that provides the default restful actions for controllers."
 
+MERB_VERSION = '~> 1.1'
+DM_VERSION   = '~> 0.10'
+
 spec = Gem::Specification.new do |s|
   
   s.rubyforge_project = 'merb_resource_controller'
@@ -43,12 +46,11 @@ spec = Gem::Specification.new do |s|
   # development dependencies
   # if these are desired, install with:
   # gem install merb_resource_controller --development
-  s.add_development_dependency('merb-assets',    '~>1.0')
-  s.add_development_dependency('merb-helpers',   '~>1.0')
-  s.add_development_dependency('dm-core',        '~>0.9.8')
-  s.add_development_dependency('dm-validations', '~>0.9.8')
-  s.add_development_dependency('dm-serializer',  '~>0.9.8')
-  s.add_development_dependency('dm-constraints', '~>0.9.8')
+  s.add_development_dependency('merb-assets',    MERB_VERSION)
+  s.add_development_dependency('merb-helpers',   MERB_VERSION)
+  s.add_development_dependency('dm-core',        DM_VERSION)
+  s.add_development_dependency('dm-validations', DM_VERSION)
+  s.add_development_dependency('dm-serializer',  DM_VERSION)
   
 end
 

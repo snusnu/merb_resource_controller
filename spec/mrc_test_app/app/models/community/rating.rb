@@ -5,7 +5,6 @@ module Community
     include DataMapper::Resource
   
     property :id,         Serial
-    property :comment_id, Integer, :nullable => false
     property :rate,       Integer, :nullable => false
   
     belongs_to :comment

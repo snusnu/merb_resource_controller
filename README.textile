@@ -241,7 +241,7 @@ def update
   set_action_specific_provides(:update)
   load_resource
   raise Merb::ControllerExceptions::NotFound unless requested_resource
-  if requested_resource.update_attributes(params[member_name])
+  if requested_resource.update(params[member_name])
     handle_successful_update
   else
     handle_failed_update

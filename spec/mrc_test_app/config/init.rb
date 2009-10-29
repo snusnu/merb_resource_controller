@@ -1,15 +1,15 @@
 # Go to http://wiki.merbivore.com/pages/init-rb
 
-merb_gems_version = "~>1.0"
-dm_gems_version   = "~>0.9.8"
+MERB_VERSION = '~> 1.1'
+DM_VERSION   = '~> 0.10'
 
-dependency "dm-core",        dm_gems_version
-dependency "dm-validations", dm_gems_version
-dependency "dm-serializer",  dm_gems_version
-dependency "dm-constraints", dm_gems_version
+dependency "dm-core",        DM_VERSION
+dependency "dm-validations", DM_VERSION
+dependency "dm-serializer",  DM_VERSION
+dependency "dm-constraints", DM_VERSION
 
-dependency "merb-assets",    merb_gems_version
-dependency "merb-helpers",   merb_gems_version
+dependency "merb-assets",    MERB_VERSION
+dependency "merb-helpers",   MERB_VERSION
 
 use_orm :datamapper
 use_test :rspec
